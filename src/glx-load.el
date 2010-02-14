@@ -1,0 +1,75 @@
+(require 'glx-value)
+(require 'glx-glulx)
+(require 'glx-stack)
+(require 'glx-exec)
+
+(require 'glk-event)
+
+(defvar *glx-unexpected-exit* nil "Is the VM exiting unexpectedly, or because it's waiting for player input")
+
+(defun glx-load-story-file (file-name)
+  (save-excursion
+    (set-buffer (get-buffer-create "*glulx*"))
+    (erase-buffer)
+    (insert-file-contents-literally file-name)
+    (vconcat (buffer-substring (point-min) (point-max)))))
+
+(put 'glx-load-error 'error-conditions '(error glx-error glx-load-error))
+(put 'glx-load-error 'error-message "Glulx game file load error")
+
+(defun glx-process-header ()
+  (unless (equal (glx-memory-get-32 glx-0) (glx-32 #x6c #x75 #x6c #x47))
+    (signal 'glx-load-error (list "Not a Glulx game file" (glx-memory-get-32 glx-0))))
+  (unless (or (equal (glx-memory-get-32 glx-4) (glx-32 0 1 3 0))
+              (equal (glx-memory-get-32 glx-4) (glx-32 0 0 3 0))
+              (equal (glx-memory-get-32 glx-4) (glx-32 0 0 2 0)))
+    (signal 'glx-load-error (list "Incorrect Glulx version" (glx-memory-get-32 glx-4))))
+  (setq *glx-ram-start* (glx-memory-get-32 glx-8))
+  (setq *glx-memory*
+        (vconcat *glx-memory*
+                 (make-vector
+                  (glx-32->int
+                   (glx-- (glx-memory-get-32 (glx-32 16))
+                          (glx-memory-get-32 (glx-32 12))))
+                  0)))
+  (setq *glx-string-table* (glx-memory-get-32 (glx-32 28)))
+  (setq *glx-stack* '())
+  (glx-memory-get-32 (glx-32 24)))
+
+(defun glx-play-game (file-name)
+  (interactive "fGame file name: ")
+  (setq *glx-memory* (glx-load-story-file file-name))
+  (setq *glx-glk-selected* nil)
+  (setq *glx-glk-id-gen* 0)
+  (setq *glx-pc* nil)
+  (setq *glx-unexpected-exit* t)
+  (setq *glx-log-buffer* (get-buffer-create "*glx-log*"))
+  (setq glk-event-reentry-function #'glx-glk-event-callback)
+  (save-excursion
+    (set-buffer *glx-log-buffer*)
+    (erase-buffer))
+  (random t)
+  (unwind-protect
+      (progn
+        (glki-init (make-frame))
+        (glx-process-header)
+        (glx-call-function (glx-memory-get-32 (glx-32 24)) 'game-over 0 '())
+        (while (glx-execute-next-instruction)))
+    (glx-cleanup)))
+
+(defun glx-cleanup ()
+  (when *glx-unexpected-exit*
+    ;;      (glki-end)
+    (setq *glx-stack* nil)
+    (setq *glx-string-table* nil)
+    (setq *glx-memory* nil)
+    (setq *glx-ram-start* nil)
+    (setq *glx-glk-selected* nil)
+    (setq *glx-memory* nil)
+    (setq *glx-glk-id-gen* 0)
+    (setq *glx-pc* nil)
+    (setq *glx-log-buffer* nil)
+    (message "glulx finished")))
+
+(provide 'glx-load)
+

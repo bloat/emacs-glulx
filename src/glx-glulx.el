@@ -1,0 +1,181 @@
+(require 'glx-value)
+
+(defvar *glx-memory* nil "The Glulx VM memory vector")
+(defvar *glx-stack* nil "The Glulx VM stack")
+(defvar *glx-pc* nil "The Glulx VM program counter")
+(defvar *glx-string-table* nil "The Glulx VM string table")
+(defvar *glx-ram-start* nil "A pointer to the location in memory of the start of RAM")
+(defvar *glx-glk-selected* nil "Is the GLK IO system selected?")
+(defvar *glx-undo* nil "Undo information for the Glulx VM")
+(defvar *glx-glk-id-gen* 0 "Generates glk ids for new glk opaque objects")
+(defvar *glx-store-event-memptr* nil "Where to store the glk event on re-entry")
+
+(defvar *glx-log-buffer* nil "A buffer for Glulx VM logging output")
+
+(defsubst glx-memory-ref (memptr-int)
+  (aref *glx-memory* memptr-int))
+
+(defsubst glx-memory-get-byte-int (memptr)
+  "Returns an integer with the value of the byte at the Glulx VM memory
+location given by the 32 bit MEMPTR."
+  (glx-memory-ref (glx-32->int memptr)))
+
+(defun glx-memory-get-byte (memptr)
+  "Returns a glx-32 with the value of the byte at the Glulx VM memory
+location given by the 32 bit MEMPTR."
+  (glx-32 (glx-memory-get-byte-int memptr)))
+
+(defun glx-sign-extend-byte-to-32 (value)
+  (let ((unsigned (glx-32->int value)))
+    (if (> unsigned #x7f)
+        (glx-32 unsigned 255 255 255)
+      value)))
+
+(defun glx-sign-extend-16-to-32 (value)
+  (let ((unsigned (glx-32->int value)))
+    (if (> unsigned #x7fff)
+        (glx-32 (fourth value) (third value) 255 255)
+      value)))
+
+(defun glx-memory-get-byte-signed (memptr)
+  "Returns a 32 bit value with the value of the byte at the Glulx VM memory
+location given by the 32 bit MEMPTR. The value is sign extended from 8 to 32 bits."
+  (glx-sign-extend-byte-to-32 (glx-memory-get-byte memptr)))
+
+(defun glx-memory-get-range-as-vector (start end)
+  "Return a vector of bytes from the Glulx VM memory locations given by
+START (inclusive) and END (exclusive)."
+  (subseq *glx-memory* (glx-32->int start) (glx-32->int end)))
+
+(defun glx-memory-get-range (start end)
+  "Return a list of bytes from the Glulx VM memory locations given by
+START (inclusive) and END (exclusive)."
+  (append (glx-memory-get-range-as-vector start end) nil))
+
+(defun glx-memory-get-value (memptr length)
+  (apply #'glx-32 (nreverse (glx-memory-get-range memptr (glx-+ length memptr)))))
+
+(defun glx-memory-get-16 (memptr)
+  "Returns a 32 bit value with the value of the two bytes at the Glulx VM memory
+location given by the 32 bit MEMPTR."
+  (glx-memory-get-value memptr glx-2))
+
+(defun glx-memory-get-16-signed (memptr)
+  "Returns a 32 bit value with the value of the two bytes at the Glulx VM memory
+location given by the 32 bit MEMPTR. The value is sign extended from 16 to 32 bits."
+  (glx-sign-extend-16-to-32 (glx-memory-get-16 memptr)))
+
+(defun glx-memory-get-16-int (memptr)
+  "Returns an integer with the value of the two bytes at the Glulx VM memory
+location given by the 32 bit MEMPTR."
+  (glx-32->int (glx-memory-get-value memptr glx-2)))
+
+(defun glx-memory-get-32 (memptr)
+  "Returns a 32 bit value from the location given by the 32 bit MEMPTR"
+  (glx-memory-get-value memptr glx-4))
+
+(defun glx-memory-set (memptr value bytes)
+  "Sets a value into the memory location given by the 32 bit MEMPTR.
+The value is truncated to the given number of bytes."
+  (let ((ptr (glx-32->int memptr)))
+    (dolist (byte (subseq (glx-32-get-bytes-as-list-big-endian value) (- bytes)))
+      (aset *glx-memory* ptr byte)
+      (incf ptr))))
+
+(defun glx-memory-set-string (memptr string)
+  (let ((ptr (glx-32->int memptr)))
+    (mapcar #'(lambda (char) (aset *glx-memory* ptr char)
+                (incf ptr))
+            string)))
+
+(defun glx-log (message &rest values)
+  (unless *glx-log-buffer*
+    (setq *glx-log-buffer* (get-buffer-create "*glx-log*")))
+  (save-excursion
+    (set-buffer *glx-log-buffer*)
+    (insert (apply #'format message values) ?\n)))
+
+(defun glx-search-get-key (key key-size options)
+  (if (= 0 (logand 1 (glx-32->int options)))
+      (subseq (glx-32-get-bytes-as-list-big-endian key) (- (glx-32->int key-size)))
+    (glx-search-load-key key 0 glx-0 glx-0 key-size)))
+
+(defun glx-search-struct-start (start count struct-size)
+  (glx-+ start (glx-* (glx-32 count) struct-size)))
+
+(defun glx-search-load-key (start count struct-size key-offset key-size)
+  (let ((key-start (glx-+ key-offset (glx-search-struct-start start count struct-size))))
+    (glx-memory-get-range key-start (glx-+ key-start key-size))))
+
+(defun glx-search-success (start count struct-size options)
+  (if (= 0 (logand 4 (glx-32->int options)))
+      (glx-search-struct-start start count struct-size)
+    (glx-32 count)))
+
+(defun glx-search-failure (options)
+  (if (= 0 (logand 4 (glx-32->int options)))
+      glx-0
+    (glx-32 -1)))
+
+(defun glx-memory-linear-search (key key-size start struct-size num-structs key-offset options)
+  (let ((actual-key (glx-search-get-key key key-size options))
+        (count 0)
+        (result nil)
+        (int-num-structs (if (equal num-structs (glx-32 -1)) -1 (glx-32->int num-structs)))
+        (zero-term-flag (= 2 (logand (glx-32->int options) 2))))
+    (while (not result)
+      (if (= count int-num-structs)
+          (setq result (glx-search-failure options))
+        (let ((loaded-key (glx-search-load-key start count struct-size key-offset key-size)))
+          (cond ((and zero-term-flag (not (remove-if #'zerop loaded-key)))
+                 (setq result (glx-search-failure options)))
+                ((equal actual-key loaded-key)
+                 (setq result (glx-search-success start count struct-size options))))))
+      (incf count))
+    result))
+
+(defun glx-binary-key-compare (key1 key2)
+  (cond ((null key1) 0)
+        ((< (car key1) (car key2)) -1)
+        ((> (car key1) (car key2)) 1)
+        (t (glx-binary-key-compare (cdr key1) (cdr key2)))))
+
+(defun glx-memory-binary-search (key key-size start struct-size num-structs key-offset options)
+  (let ((actual-key (glx-search-get-key key key-size options))
+        (left -1)
+        (right (glx-32->int num-structs))
+        (count 0)
+        (result nil))
+    (while (not result)
+      (let ((probe (/ (- right left) 2)))
+        (if (= probe 0)
+            (setq result (glx-search-failure options))
+          (setq count (+ left probe))
+          (let* ((loaded-key (glx-search-load-key start count struct-size key-offset key-size))
+                 (comp (glx-binary-key-compare loaded-key actual-key)))
+            (cond ((= 0 comp)
+                   (setq result (glx-search-success start count struct-size options)))
+                  ((= -1 comp)
+                   (setq left count))
+                  (t (setq right count)))))))
+    result))
+
+(defun glx-save-undo ()
+  (setq *glx-undo*
+        (list (copy-sequence *glx-memory*)
+              (copy-tree *glx-stack*)
+              *glx-pc*)))
+
+(defun glx-restore-undo ()
+  (if (not *glx-undo*)
+      glx-1
+    (setq *glx-memory* (first *glx-undo*))
+    (setq *glx-stack* (second *glx-undo*))
+    (setq *glx-pc* (third *glx-undo*))
+    (setq *glx-undo* nil)
+    glx-0))
+
+(defun glx-gen-inst-function (name)
+  (intern (concat "glx-instruction-" (symbol-name name))))
+
+(provide 'glx-glulx)
