@@ -1,3 +1,14 @@
+;;; emacs glx
+;;
+;; Copyright (C) 2008, 2009 Andrew Cowper
+;;
+;; Author: Andrew Cowper (andrew.cowper@slothrop.net)
+;;
+;; URL: http://github.com/bloat/emacs-glulx
+;;
+;; This file is licensed under the terms of the GNU General Public
+;; License as distributed with Emacs (press C-h C-c to view it).
+
 (glki-init (make-frame (list (cons 'height 61) (cons 'width 60))))
 
 (glk-window-open nil nil 0 'glk-wintype-text-buffer 0 'window1 nil)
