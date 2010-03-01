@@ -1,5 +1,5 @@
 EMACS=emacs -q -batch --no-site-file --eval
-GLK=../glk
+GLK=../glk/src
 
 glx-value.elc: glx-value.el
 	${EMACS} "(progn (add-to-list 'load-path \".\") (byte-compile-file \"glx-value.el\"))"

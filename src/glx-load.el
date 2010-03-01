@@ -23,7 +23,7 @@
     (set-buffer (get-buffer-create "*glulx*"))
     (erase-buffer)
     (insert-file-contents-literally file-name)
-    (vconcat (buffer-substring (point-min) (point-max)))))
+    (vconcat (mapcar (lambda (x) (logand 255 x)) (buffer-substring (point-min) (point-max))))))
 
 (put 'glx-load-error 'error-conditions '(error glx-error glx-load-error))
 (put 'glx-load-error 'error-message "Glulx game file load error")

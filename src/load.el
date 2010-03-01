@@ -9,8 +9,8 @@
 ;; This file is licensed under the terms of the GNU General Public
 ;; License as distributed with Emacs (press C-h C-c to view it).
 
-(add-to-list 'load-path "/home/bloat/dev/src/lisp/elisp/glulx")
-(add-to-list 'load-path "/home/bloat/dev/src/lisp/elisp/glk")
+(add-to-list 'load-path (expand-file-name "~/git/emacs-glx/src"))
+(add-to-list 'load-path (expand-file-name "~/git/emacs-glx/glk/src"))
 
 (require 'glx-exec)
 (require 'glx-glk)
