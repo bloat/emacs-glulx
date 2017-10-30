@@ -144,6 +144,34 @@
   :tags '(32-bit)
   (should (equal (glx-bitnot (glx-32 23 0 255 33)) (glx-32 #xe8 #xff #x00 #xde))))
 
+(ert-deftest test-shiftl ()
+  "Test shift left"
+  :tags '(32-bit)
+  (should (equal (glx-shiftl (glx-32 23 0 255 33) (glx-32 50)) glx-0))
+  (should (equal (glx-shiftl (glx-32 23 0 255 33) glx-0) (glx-32 23 0 255 33)))
+  (should (equal (glx-shiftl (glx-32 23 0 255 33) glx-1) (glx-32 46 0 254 67)))
+  (should (equal (glx-shiftl (glx-32 23 0 255 33) (glx-32 20)) (glx-int->32 24117248))))
+
+(ert-deftest test-sshiftr ()
+  "Test signed shift right"
+  :tags '(32-bit)
+  (should (equal (glx-sshiftr (glx-32 23 0 255 33) (glx-32 50)) glx-0))
+  (should (equal (glx-sshiftr (glx-32 23 0 255 150) (glx-32 50)) (glx-32 255 255 255 255)))
+  (should (equal (glx-sshiftr (glx-32 23 0 255 33) glx-1) (glx-int->32 285179915)))
+  (should (equal (glx-sshiftr (glx-32 23 0 255 33) (glx-32 20)) (glx-int->32 543)))
+  (should (equal (glx-sshiftr (glx-32 23 0 255 150) glx-1) (glx-int->32 3414130699)))
+  (should (equal (glx-sshiftr (glx-32 23 0 255 150) (glx-32 20)) (glx-int->32 4294965615))))
+
+(ert-deftest test-ushiftr ()
+  "Test unsigned shift right"
+  :tags '(32-bit)
+  (should (equal (glx-ushiftr (glx-32 23 0 255 33) (glx-32 50)) glx-0))
+  (should (equal (glx-ushiftr (glx-32 23 0 255 150) (glx-32 50)) glx-0))
+  (should (equal (glx-ushiftr (glx-32 23 0 255 33) glx-1) (glx-int->32 285179915)))
+  (should (equal (glx-ushiftr (glx-32 23 0 255 33) (glx-32 20)) (glx-int->32 543)))
+  (should (equal (glx-ushiftr (glx-32 23 0 255 150) glx-1) (glx-int->32 1266647051)))
+  (should (equal (glx-ushiftr (glx-32 23 0 255 150) (glx-32 20)) (glx-int->32 2415))))
+
 (ert-deftest test-multiplication-by-one-byte-without-carry ()
   "Test multiplication by one byte without carry"
   :tags '(32-bit)

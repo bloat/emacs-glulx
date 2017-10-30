@@ -159,6 +159,44 @@
             (logand 255 (lognot (second xb)))
             (logand 255 (lognot (first xb))))))
 
+
+(defun glx-shiftl-1 (x)
+  (let ((xb (glx-32-get-bytes-as-list-big-endian x)))
+    (glx-32 (logand 255 (lsh (fourth xb) 1))
+            (+ (logand 255 (lsh (third xb) 1)) (if (zerop (logand 128 (fourth xb))) 0 1))
+            (+ (logand 255 (lsh (second xb) 1)) (if (zerop (logand 128 (third xb))) 0 1))
+            (+ (logand 255 (lsh (first xb) 1)) (if (zerop (logand 128 (second xb))) 0 1)))))
+
+(defun glx-shiftl (x y)
+  (if (glx-32-u> y (glx-32 31))
+      glx-0
+    (let ((result x))
+      (dotimes (n (glx-32->int y) result)
+        (setq result (glx-shiftl-1 result))))))
+
+(defun glx-shiftr-1 (x p)
+  (let ((xb (glx-32-get-bytes-as-list-big-endian x)))
+    (glx-32 (+ (lsh (fourth xb) -1) (if (oddp (third xb)) 128 0))
+            (+ (lsh (third xb) -1) (if (oddp (second xb)) 128 0))
+            (+ (lsh (second xb) -1) (if (oddp (first xb)) 128 0))
+            (+ p (lsh (first xb) -1)))))
+
+(defun glx-sshiftr (x y)
+  (let* ((xb (glx-32-get-bytes-as-list-big-endian x))
+         (positive (zerop (logand 128 (first xb)))))
+    (if (glx-32-u> y (glx-32 31))
+        (if positive glx-0 (glx-32 255 255 255 255))
+      (let ((result x))
+        (dotimes (n (glx-32->int y) result)
+          (setq result (glx-shiftr-1 result (if positive 0 128))))))))
+
+(defun glx-ushiftr (x y)
+  (if (glx-32-u> y (glx-32 31))
+      glx-0
+    (let ((result x))
+      (dotimes (n (glx-32->int y) result)
+        (setq result (glx-shiftr-1 result 0))))))
+
 (defun glx-32->char (value)
   (fourth (glx-32-get-bytes-as-list-big-endian value)))
 
