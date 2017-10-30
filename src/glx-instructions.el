@@ -111,7 +111,6 @@
 
 (glx-defopcode 'astore #x4c '(load load load) #'glx-instruction-astore)
 
-
 (defun get-bit-access-vars (l1 l2)
   (let* ((l2int (glx-s32->int l2))
          (l2intmod (% l2int 8)))
@@ -135,6 +134,8 @@
                     1)))
 
 (glx-defopcode 'astorebit #x4f '(load load load) #'glx-instruction-astorebit)
+
+(glx-def-store stkcount #x50 () (glx-stack-count))
 
 (defun glx-instruction-stkcopy (count)
   (dolist (value (reverse (glx-stack-peek (glx-32->int count))))

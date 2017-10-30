@@ -20,6 +20,9 @@
 (defun glx-stack-pop ()
   (pop *glx-stack*))
 
+(defun glx-stack-count ()
+  (glx-int->32 (length (caar *glx-stack*))))
+
 (defun glx-value-push (value)
   (push value (caar *glx-stack*)))
 

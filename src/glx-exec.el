@@ -18,7 +18,8 @@
 (put 'glx-exec-error 'error-message "Glulx execution error")
 
 (defun glx-get-opcode (memptr)
-  "Returns the opcode at the location in the Glulx VM memory given by MEMPTR."
+  "An opcode can encoded into 1, 2 or 4 bytes. Returns the location of the data following
+the opcode at the location MEMPTR (depending on how long the opcode is), and the decoded opcode."
   (let ((opcode-type (lsh (glx-memory-get-byte-int memptr) -6)))
     ;; TODO this is not safe if you change how a 32 bit is represented.
     (cond ((= opcode-type 3) (let ((opcode (glx-32-get-bytes-as-list-big-endian (glx-memory-get-32 memptr))))
