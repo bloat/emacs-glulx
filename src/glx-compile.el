@@ -28,6 +28,9 @@ during compilation, and compiles those also."
           (push to-compile compiled-functions))))))
 
 (defun glx-compile-load-arg (mode arg-ptr)
+  "The first result is a list of a function to run to retrieve the actual value for the argument,
+and a value to pass as an argument to that function when running it. The second result is the 
+number of bytes used from the instructions argument data."
   (cond ((= mode 0) (values (list #'(lambda (loaded-arg-ptr) glx-0) nil) 0))
         ((= mode 1) (values (list #'identity (glx-memory-get-byte-signed arg-ptr)) 1))
         ((= mode 2) (values (list #'identity (glx-memory-get-16-signed arg-ptr)) 2))

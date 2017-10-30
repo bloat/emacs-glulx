@@ -30,7 +30,7 @@
 
 (defun glx-stack-peek (count)
   (if (> count (length (caar *glx-stack*)))
-      (signal 'glx-stack-error (list "Can't peep beyond frame length" (car *glx-stack*)))
+      (signal 'glx-stack-error (list "Can't peek beyond frame length" (car *glx-stack*)))
     (subseq (caar *glx-stack*) 0 count)))
 
 (defun glx-push-call-stub (dest-type dest-addr)

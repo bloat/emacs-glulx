@@ -33,6 +33,7 @@
                     #'glx-32->glk-opq
                     (list 1 #'glx-store-glk-result)
                     (list 2 #'glx-store-glk-result)) *glx-glk-functions*)
+(puthash #x2a (list #'glk-window-clear #'glx-32->glk-opq) *glx-glk-functions*)
 (puthash #x2b (list #'(lambda (a b c) nil) #'identity #'identity #'identity) *glx-glk-functions*)
 (puthash #x2f (list #'glk-set-window #'glx-32->glk-opq) *glx-glk-functions*)
 (puthash #x40 (list #'glk-stream-iterate #'glx-32->glk-opq (list 1 #'glx-store-glk-result)) *glx-glk-functions*)

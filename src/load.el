@@ -9,8 +9,8 @@
 ;; This file is licensed under the terms of the GNU General Public
 ;; License as distributed with Emacs (press C-h C-c to view it).
 
-(add-to-list 'load-path (expand-file-name "~/git/emacs-glx/src"))
-(add-to-list 'load-path (expand-file-name "~/git/emacs-glx/glk/src"))
+(add-to-list 'load-path (expand-file-name "~/git/emacs-glulx/src"))
+(add-to-list 'load-path (expand-file-name "~/git/emacs-glulx/glk/src"))
 
 (require 'glx-exec)
 (require 'glx-glk)
@@ -28,7 +28,7 @@
 (require 'glk-encoding)
 (require 'glk-event)
 (require 'glk-file)
-(require 'glk-function-dispatch)
+; (require 'glk-function-dispatch)
 (require 'glk-opaque)
 (require 'glk-stream)
 (require 'glk-window)
@@ -44,11 +44,10 @@
 (load "glx-compile-spec.el")
 
 (load "window-spec")
-(load "function-dispatch-spec")
+;; (load "function-dispatch-spec")
 (load "stream-spec")
 (load "event-spec")
 (load "mode-spec")
-(load "event-spec")
 (load "encoding-spec")
 (load "file-spec")
 (load "opaque-spec")
