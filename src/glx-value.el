@@ -144,6 +144,21 @@
             (logior (second xb) (second yb))
             (logior (first xb) (first yb)))))
 
+(defun glx-bitxor (x y)
+  (let ((xb (glx-32-get-bytes-as-list-big-endian x))
+        (yb (glx-32-get-bytes-as-list-big-endian y)))
+    (glx-32 (logxor (fourth xb) (fourth yb))
+            (logxor (third xb) (third yb))
+            (logxor (second xb) (second yb))
+            (logxor (first xb) (first yb)))))
+
+(defun glx-bitnot (x)
+  (let ((xb (glx-32-get-bytes-as-list-big-endian x)))
+    (glx-32 (logand 255 (lognot (fourth xb)))
+            (logand 255 (lognot (third xb)))
+            (logand 255 (lognot (second xb)))
+            (logand 255 (lognot (first xb))))))
+
 (defun glx-32->char (value)
   (fourth (glx-32-get-bytes-as-list-big-endian value)))
 

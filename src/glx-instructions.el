@@ -53,6 +53,8 @@
 (glx-def-store neg #x15 (l1) (glx-- glx-0 l1))
 (glx-def-store bitand #x18 (l1 l2) (glx-bitand l1 l2))
 (glx-def-store bitor #x19 (l1 l2) (glx-bitor l1 l2))
+(glx-def-store bitxor #x1a (l1 l2) (glx-bitxor l1 l2))
+(glx-def-store bitnot #x1b (l1) (glx-bitnot l1))
 (glx-def-jump jump #x20 () t)
 (glx-def-jump jz #x22 (l1) (glx-0-p l1))
 (glx-def-jump jnz #x23 (l1) (not (glx-0-p l1)))

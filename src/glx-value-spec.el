@@ -134,6 +134,16 @@
   :tags '(32-bit)
   (should (equal (glx-bitor (glx-32 98 44 230 104) (glx-32 23 0 255 33)) (glx-32 119 44 255 105))))
 
+(ert-deftest test-bitxor ()
+  "Test bitxor"
+  :tags '(32-bit)
+  (should (equal (glx-bitxor (glx-32 98 44 230 104) (glx-32 23 0 255 33)) (glx-32 #x75 #x2c #x19 #x49))))
+
+(ert-deftest test-bitnot ()
+  "Test bitxor"
+  :tags '(32-bit)
+  (should (equal (glx-bitnot (glx-32 23 0 255 33)) (glx-32 #xe8 #xff #x00 #xde))))
+
 (ert-deftest test-multiplication-by-one-byte-without-carry ()
   "Test multiplication by one byte without carry"
   :tags '(32-bit)
