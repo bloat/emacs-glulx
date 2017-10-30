@@ -82,7 +82,7 @@
                             0 0 0 0
                             0 3 4 0]))
     (glx-process-header)
-    (expect (equal *glx-string-table* (glx-32 0 4 3)))))
+    (should (equal *glx-string-table* (glx-32 0 4 3)))))
 
 (ert-deftest start-function-pointer ()
   "Should return the start function pointer"
@@ -94,6 +94,6 @@
                             0 0 0 0
                             0 0 5 6
                             0 3 4 0]))
-    (expect (equal (glx-process-header) (glx-32 6 5)))
-    (expect (equal *glx-string-table* (glx-32 0 4 3)))))
+    (should (equal (glx-process-header) (glx-32 6 5)))
+    (should (equal *glx-string-table* (glx-32 0 4 3)))))
 
