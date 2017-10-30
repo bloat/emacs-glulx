@@ -626,3 +626,13 @@
     (should (equal *glx-memory* [0 0 0 0 255 255 255 251 0 0 0 0]))
     (glx-instruction-neg (glx-32 9 9 9 125) (list #'glx-store-mem glx-4))
     (should (equal *glx-memory* [0 0 0 0 130 246 246 247 0 0 0 0]))))
+
+(ert-deftest stkcount-instruction ()
+  "stkcount instruction"
+  :tags '(instructions)
+
+  ;; store to mem
+  (let ((*glx-memory* (make-vector 8 0)))
+    (cl-letf (((symbol-function 'glx-stack-count) (lambda () glx-2)))
+      (glx-instruction-stkcount (list #'glx-store-mem glx-4))
+      (should (equal *glx-memory* [0 0 0 0 0 0 0 2])))))

@@ -143,6 +143,7 @@
     (glx-build-call-frame glx-0)
     (glx-value-push (glx-32 45))
     (should (equal *glx-stack* `(((,(glx-32 45)) ()))))
+    (should (equal (glx-stack-count) glx-1))
     (should (equal (glx-value-pop) (glx-32 45)))
     (should (equal *glx-stack* '((() ()))))))
 
@@ -152,6 +153,7 @@
   (let ((*glx-stack* nil)
         (*glx-memory* [#xc0 0 0]))
     (glx-build-call-frame glx-0)
+    (should (equal (glx-stack-count) glx-0))
     (should-error (glx-value-pop) :type 'glx-stack-error)))
 
 (ert-deftest locals ()
