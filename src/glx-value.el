@@ -120,8 +120,8 @@ on to the right."
 Returns the result and the remainder."
   (let* ((x-abs (glx-abs x))
          (y-abs (glx-abs y))
-         (x-neg (not (equal x-abs x)))
-         (y-neg (not (equal y-abs y)))
+         (x-neg (not (zerop (logand 128 (first (glx-32-get-bytes-as-list-big-endian x))))))
+         (y-neg (not (zerop (logand 128 (first (glx-32-get-bytes-as-list-big-endian y))))))
          (xb (glx-32-get-bytes-as-list-big-endian x-abs)))
 
     (multiple-value-bind (div1 rem1) (glx-subtraction-div (glx-32 (first xb)) y-abs)
@@ -269,7 +269,7 @@ Returns the result and the remainder."
       "0"
     (let* ((glx-10 (glx-32 10))
            (x-abs (glx-abs x))
-           (neg (not (equal x-abs x)))
+           (neg (not (zerop (logand 128 (first (glx-32-get-bytes-as-list-big-endian x))))))
            (result "")
            rem)
       (while (not (equal x-abs glx-0))

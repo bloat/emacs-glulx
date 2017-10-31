@@ -272,4 +272,5 @@
   (should (equal (glx-32->dec-string (glx-32 7 122 23 40)) "672627207"))
   (should (equal (glx-32->dec-string (glx-32 -1)) "-1"))
   (should (equal (glx-32->dec-string (glx-32 -25)) "-25"))
-  (should (equal (glx-32->dec-string (glx-32 -33591562)) "-33591562")))
+  (should (equal (glx-32->dec-string (glx-32 -33591562)) "-33591562"))
+  (should (equal (glx-32->dec-string (glx-32 0 0 0 128)) "-2147483648")))
