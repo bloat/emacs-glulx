@@ -95,6 +95,47 @@
         (row4 (glx-lshift (glx-lshift (glx-lshift (glx-*-byte x (first y)))))))
     (glx-+ (glx-+ (glx-+ row1 row2) row3) row4)))
 
+(defun glx-abs (x)
+  (let* ((mask (glx-sshiftr x (glx-32 31))))
+    (glx-- (glx-bitxor mask x) mask)))
+
+(defun glx-subtraction-div (x y)
+  "X and Y are unsigned glx-32 values. This is inefficient, so can't be used
+for the main division algorithm."
+  (let ((result 0))
+    (while (or (glx-32-u< y x) (equal y x))
+      (incf result)
+      (setq x (glx-- x y)))
+    (values result x)))
+
+(defun glx-256-lshift-combine (x digit)
+  "For long division, this takes a number and shifts its digits
+ - radix 256, like a glx-32 - one place left, and adds the new digit
+on to the right."
+  (let ((xb (glx-32-get-bytes-as-list-big-endian x)))
+    (glx-32 digit (fourth x) (third x) (second x))))
+
+(defun glx-/ (x y)
+  "Long division using the four radix 256 digits of a glx-32"
+  (let* ((x-abs (glx-abs x))
+         (y-abs (glx-abs y))
+         (x-neg (not (equal x-abs x)))
+         (y-neg (not (equal y-abs y)))
+         (xb (glx-32-get-bytes-as-list-big-endian x-abs)))
+
+    (multiple-value-bind (div1 rem1) (glx-subtraction-div (glx-32 (first xb)) y-abs)
+      (multiple-value-bind (div2 rem2) (glx-subtraction-div (glx-256-lshift-combine rem1 (second xb)) y-abs)
+        (multiple-value-bind (div3 rem3) (glx-subtraction-div (glx-256-lshift-combine rem2 (third xb)) y-abs)
+          (multiple-value-bind (div4 rem4) (glx-subtraction-div (glx-256-lshift-combine rem3 (fourth xb)) y-abs)
+            (let ((result (glx-32 div4 div3 div2 div1)))
+              (values
+               (if (and (not (and x-neg y-neg)) (or x-neg y-neg))
+                   (glx-* (glx-32 -1) result)
+                 result)
+               (if x-neg
+                   (glx-* (glx-32 -1) rem4)
+                 rem4)))))))))
+
 (defun glx-32->int (value)
   (let ((b1 (first value))
         (b2 (second value))

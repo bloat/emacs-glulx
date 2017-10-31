@@ -150,27 +150,27 @@
   (should (equal (glx-shiftl (glx-32 23 0 255 33) (glx-32 50)) glx-0))
   (should (equal (glx-shiftl (glx-32 23 0 255 33) glx-0) (glx-32 23 0 255 33)))
   (should (equal (glx-shiftl (glx-32 23 0 255 33) glx-1) (glx-32 46 0 254 67)))
-  (should (equal (glx-shiftl (glx-32 23 0 255 33) (glx-32 20)) (glx-int->32 24117248))))
+  (should (equal (glx-shiftl (glx-32 23 0 255 33) (glx-32 20)) (glx-32 24117248))))
 
 (ert-deftest test-sshiftr ()
   "Test signed shift right"
   :tags '(32-bit)
   (should (equal (glx-sshiftr (glx-32 23 0 255 33) (glx-32 50)) glx-0))
   (should (equal (glx-sshiftr (glx-32 23 0 255 150) (glx-32 50)) (glx-32 255 255 255 255)))
-  (should (equal (glx-sshiftr (glx-32 23 0 255 33) glx-1) (glx-int->32 285179915)))
-  (should (equal (glx-sshiftr (glx-32 23 0 255 33) (glx-32 20)) (glx-int->32 543)))
-  (should (equal (glx-sshiftr (glx-32 23 0 255 150) glx-1) (glx-int->32 3414130699)))
-  (should (equal (glx-sshiftr (glx-32 23 0 255 150) (glx-32 20)) (glx-int->32 4294965615))))
+  (should (equal (glx-sshiftr (glx-32 23 0 255 33) glx-1) (glx-32 285179915)))
+  (should (equal (glx-sshiftr (glx-32 23 0 255 33) (glx-32 20)) (glx-32 543)))
+  (should (equal (glx-sshiftr (glx-32 23 0 255 150) glx-1) (glx-32 3414130699)))
+  (should (equal (glx-sshiftr (glx-32 23 0 255 150) (glx-32 20)) (glx-32 4294965615))))
 
 (ert-deftest test-ushiftr ()
   "Test unsigned shift right"
   :tags '(32-bit)
   (should (equal (glx-ushiftr (glx-32 23 0 255 33) (glx-32 50)) glx-0))
   (should (equal (glx-ushiftr (glx-32 23 0 255 150) (glx-32 50)) glx-0))
-  (should (equal (glx-ushiftr (glx-32 23 0 255 33) glx-1) (glx-int->32 285179915)))
-  (should (equal (glx-ushiftr (glx-32 23 0 255 33) (glx-32 20)) (glx-int->32 543)))
-  (should (equal (glx-ushiftr (glx-32 23 0 255 150) glx-1) (glx-int->32 1266647051)))
-  (should (equal (glx-ushiftr (glx-32 23 0 255 150) (glx-32 20)) (glx-int->32 2415))))
+  (should (equal (glx-ushiftr (glx-32 23 0 255 33) glx-1) (glx-32 285179915)))
+  (should (equal (glx-ushiftr (glx-32 23 0 255 33) (glx-32 20)) (glx-32 543)))
+  (should (equal (glx-ushiftr (glx-32 23 0 255 150) glx-1) (glx-32 1266647051)))
+  (should (equal (glx-ushiftr (glx-32 23 0 255 150) (glx-32 20)) (glx-32 2415))))
 
 (ert-deftest test-multiplication-by-one-byte-without-carry ()
   "Test multiplication by one byte without carry"
@@ -216,6 +216,14 @@
   "Test large negative 32 bit to signed int"
   :tags '(32-bit)
   (should (equal (glx-s32->int (glx-32 1 0 0 240)) -268435455)))
+
+(ert-deftest test-division ()
+  "Test division"
+  (should (equal (glx-/ (glx-32 10) glx-2) (list (glx-32 5) glx-0)))
+  (should (equal (glx-/ (glx-32 11) glx-2) (list (glx-32 5) glx-1)))
+  (should (equal (glx-/ (glx-32 -11) glx-2) (list (glx-32 -5) (glx-32 -1))))
+  (should (equal (glx-/ (glx-32 11) (glx-32 -2)) (list (glx-32 -5) glx-1)))
+  (should (equal (glx-/ (glx-32 -11) (glx-32 -2)) (list (glx-32 5) (glx-32 -1)))))
 
 (ert-deftest test-conversion-to-char ()
   "Test conversion to char"
