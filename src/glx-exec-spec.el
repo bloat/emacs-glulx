@@ -39,7 +39,7 @@
              "Get constant two byte arg (one arg opcode)"
              :tags '(exec)
              (let ((*glx-memory* (vector #x31 #x02 #xde #x4c)))
-n               (should (equal (glx-get-opcode-args #x31 glx-1) `(,glx-4 (,(glx-32 -8628)))))))
+               (should (equal (glx-get-opcode-args #x31 glx-1) `(,glx-4 (,(glx-32 -8628)))))))
 
 (ert-deftest get-constant-4-byte-arg--one-arg-opcode ()
              "Get constant 4 byte arg (one arg opcode)"

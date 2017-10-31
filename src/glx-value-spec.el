@@ -159,8 +159,8 @@
   (should (equal (glx-sshiftr (glx-32 23 0 255 150) (glx-32 50)) (glx-32 255 255 255 255)))
   (should (equal (glx-sshiftr (glx-32 23 0 255 33) glx-1) (glx-32 285179915)))
   (should (equal (glx-sshiftr (glx-32 23 0 255 33) (glx-32 20)) (glx-32 543)))
-  (should (equal (glx-sshiftr (glx-32 23 0 255 150) glx-1) (glx-32 3414130699)))
-  (should (equal (glx-sshiftr (glx-32 23 0 255 150) (glx-32 20)) (glx-32 4294965615))))
+  (should (equal (glx-sshiftr (glx-32 23 0 255 150) glx-1) (glx-32 11 128 127 203)))
+  (should (equal (glx-sshiftr (glx-32 23 0 255 150) (glx-32 20)) (glx-32 111 249 255 255))))
 
 (ert-deftest test-ushiftr ()
   "Test unsigned shift right"
@@ -169,7 +169,7 @@
   (should (equal (glx-ushiftr (glx-32 23 0 255 150) (glx-32 50)) glx-0))
   (should (equal (glx-ushiftr (glx-32 23 0 255 33) glx-1) (glx-32 285179915)))
   (should (equal (glx-ushiftr (glx-32 23 0 255 33) (glx-32 20)) (glx-32 543)))
-  (should (equal (glx-ushiftr (glx-32 23 0 255 150) glx-1) (glx-32 1266647051)))
+  (should (equal (glx-ushiftr (glx-32 23 0 255 150) glx-1) (glx-32 11 128 127 75)))
   (should (equal (glx-ushiftr (glx-32 23 0 255 150) (glx-32 20)) (glx-32 2415))))
 
 (ert-deftest test-multiplication-by-one-byte-without-carry ()
@@ -262,4 +262,14 @@
   (should-not (glx-32-u< (glx-32 200 200 200 200)
                          (glx-32 200 200 200 200))))
 
-
+(ert-deftest test-to-decimal-string ()
+  "Test conversion to a signed decimal string"
+  :tags '(32-bit)
+  (should (equal (glx-32->dec-string glx-0) "0"))
+  (should (equal (glx-32->dec-string glx-2) "2"))
+  (should (equal (glx-32->dec-string (glx-32 25)) "25"))
+  (should (equal (glx-32->dec-string (glx-32 10 145 0 2)) "33591562"))
+  (should (equal (glx-32->dec-string (glx-32 7 122 23 40)) "672627207"))
+  (should (equal (glx-32->dec-string (glx-32 -1)) "-1"))
+  (should (equal (glx-32->dec-string (glx-32 -25)) "-25"))
+  (should (equal (glx-32->dec-string (glx-32 -33591562)) "-33591562")))
