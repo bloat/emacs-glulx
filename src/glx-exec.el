@@ -14,8 +14,19 @@
 (defconst glx-instructions (make-hash-table))
 (defconst glx-compiled-instructions (make-hash-table :test 'equal :size 100000))
 
+(defsubst glx-instruction-name (instruction)
+  (first instruction))
+
+(defsubst glx-instruction-arg-list (instruction)
+  (second instruction))
+
+(defsubst glx-instruction-function (instruction)
+  (third instruction))
+
 (put 'glx-exec-error 'error-conditions '(error glx-error glx-exec-error))
 (put 'glx-exec-error 'error-message "Glulx execution error")
+
+(defvar *glx-compile* nil)
 
 (defun glx-get-opcode (memptr)
   "An opcode can encoded into 1, 2 or 4 bytes. Returns the location of the data following
@@ -95,7 +106,7 @@ the opcode at the location MEMPTR (depending on how long the opcode is), and the
 whose addressing modes are at the location in the Glulx VM memory given by ADDRESSING-MODES"
   (let ((instruction (gethash opcode glx-instructions)))
     (if instruction
-        (glx-decode-args (second instruction) addressing-modes)
+        (glx-decode-args (glx-instruction-arg-list instruction) addressing-modes)
       (signal 'glx-exec-error (list "Unknown opcode" opcode)))))
 
 (defsubst glx-process-instruction-result (result)
@@ -103,59 +114,53 @@ whose addressing modes are at the location in the Glulx VM memory given by ADDRE
            (eq result 'glx-quit))))
 
 (defun glx-execute-instruction (opcode args)
-  (glx-log "executing instruction: %s" (glx-format-exec-log (first (gethash opcode glx-instructions)) args))
-  (glx-process-instruction-result (apply (third (gethash opcode glx-instructions)) args)))
+  (let ((instruction (gethash opcode glx-instructions)))
+    (glx-log "executing instruction: %s" (glx-format-exec-log (glx-instruction-name instruction) args))
+    (glx-process-instruction-result (apply (glx-instruction-function instruction) args))))
 
 (defun glx-format-exec-log (opcode args)
   (apply #'concat
          (format "%15s " opcode)
          (mapcar #'(lambda (arg) (format "%8s " (if (symbolp (car arg))
-                                               (format "%8x-%8s" (cond ((eql (car arg)
-                                                                             #'glx-store-throw)
-                                                                        0)
-                                                                       ((eql (car arg)
-                                                                             #'glx-store-mem)
-                                                                        1)
-                                                                       ((eql (car arg)
-                                                                             #'glx-store-local)
-                                                                        2)
-                                                                       (t 3))
-                                                       (glx-32->hex-string (cadr arg)))
-                                             (glx-32->hex-string arg))))
+                                                    (format "%8x-%8s"
+                                                            (cond ((eql (car arg) #'glx-store-throw) 0)
+                                                                  ((eql (car arg) #'glx-store-mem) 1)
+                                                                  ((eql (car arg) #'glx-store-local) 2)
+                                                                  (t 3))
+                                                            (glx-32->hex-string (cadr arg)))
+                                                  (glx-32->hex-string arg))))
                  args)))
 
 (defun glx-32->hex-string (value)
   (if value
-      (let ((result
-             (apply #'format
-                    "%02x%02x%02x%02x"
-                    (glx-32-get-bytes-as-list-big-endian value))))
-        (while (and (> (length result) 1)
-                    (string= (substring result 0 1) "0"))
-          (setf result
-                (substring result 1)))
+      (let ((result (apply #'format "%02x%02x%02x%02x" (glx-32-get-bytes-as-list-big-endian value))))
+        (while (and (> (length result) 1) (string= (substring result 0 1) "0"))
+          (setf result (substring result 1)))
         result)
     "0"))
 
+(defun glx-execute-uncompiled-instruction ()
+  (multiple-value-bind (addressing-modes opcode) (glx-get-opcode *glx-pc*)
+    (glx-log "Could not compile instruction at %08x" (glx-32->int *glx-pc*))
+    (multiple-value-bind (next-instruction args)
+        (glx-get-opcode-args opcode addressing-modes)
+      (setq *glx-pc* next-instruction)
+      (glx-execute-instruction opcode args))))
+
 (defun glx-execute-next-instruction ()
-  (if (not (gethash *glx-pc* glx-compiled-instructions))
-    (multiple-value-bind (next-instruction compiled-instruction)
-        (glx-compile-instruction *glx-pc*)
-      (glx-log "Compiled instruction at %08x %s" (glx-32->int  *glx-pc*) compiled-instruction)
-      (if compiled-instruction
-          (puthash *glx-pc* (list compiled-instruction next-instruction) glx-compiled-instructions)))
-    (let ((compiled-instruction (gethash *glx-pc* glx-compiled-instructions)))
-      (if compiled-instruction
-          (progn
-            (glx-log "Executing compiled instruction at %08x %s" (glx-32->int *glx-pc*) compiled-instruction)
-            (setq *glx-pc* (second compiled-instruction))
-            (glx-process-instruction-result (glx-execute-compiled-instruction (first compiled-instruction))))
-        (multiple-value-bind (addressing-modes opcode)
-            (glx-get-opcode *glx-pc*)
-          (glx-log "Could not compile instruction at %08x" (glx-32->int *glx-pc*))
-          (multiple-value-bind (next-instruction args)
-              (glx-get-opcode-args opcode addressing-modes)
-            (setq *glx-pc* next-instruction)
-            (glx-execute-instruction opcode args)))))))
+  (if *glx-compile*
+      (progn
+        (if (not (gethash *glx-pc* glx-compiled-instructions))
+            (multiple-value-bind (next-instruction compiled-instruction) (glx-compile-instruction *glx-pc*)
+              (glx-log "Compiled instruction at %08x %s" (glx-32->int  *glx-pc*) compiled-instruction)
+              (when compiled-instruction (puthash *glx-pc* (list compiled-instruction next-instruction) glx-compiled-instructions))))
+        (let ((compiled-instruction (gethash *glx-pc* glx-compiled-instructions)))
+          (if compiled-instruction
+              (progn
+                (glx-log "Executing compiled instruction at %08x %s" (glx-32->int *glx-pc*) compiled-instruction)
+                (setq *glx-pc* (second compiled-instruction))
+                (glx-process-instruction-result (glx-execute-compiled-instruction (first compiled-instruction))))
+            (glx-execute-uncompiled-instruction))))
+    (glx-execute-uncompiled-instruction)))
 
 (provide 'glx-exec)
