@@ -83,17 +83,23 @@ the opcode at the location MEMPTR (depending on how long the opcode is), and the
         (t (signal 'glx-exec-error (list "Unsupported addressing mode" mode)))))
 
 (defun glx-process-args (arg-spec addressing-modes-ptr load-arg-processor store-arg-processor)
+  "Returns 3 values, the pointer to the next instruction following this instructions arguments, 
+a list of the loaded arguments, and a list of the addressing modes used to load those arguments.
+This function mostly deals with advancing the pointer and loading the modes, the actual args are
+loaded by the supplied LOAD-ARG-PROCESSOR and STORE-ARG-PROCESSOR functions."
   (let ((number-of-args (length arg-spec)))
     (let ((low-bits t)
           (arg-ptr (glx-+ addressing-modes-ptr (glx-int->32 (/ (if (oddp number-of-args) (+ 1 number-of-args) number-of-args) 2))))
-          result)
-      (dolist (spec arg-spec (values arg-ptr (nreverse result)))
+          args
+          modes)
+      (dolist (spec arg-spec (values arg-ptr (nreverse args) (nreverse modes)))
         (let ((mode (glx-get-mode addressing-modes-ptr low-bits)))
           (multiple-value-bind (arg bytes-used)
               (if (eq spec 'load)
                   (funcall load-arg-processor mode arg-ptr)
                 (funcall store-arg-processor mode arg-ptr))
-            (push arg result)
+            (push arg args)
+            (push mode modes)
             (setq arg-ptr (glx-+ arg-ptr (glx-32 bytes-used)))
             (setq low-bits (not low-bits))
             (when low-bits (setq addressing-modes-ptr (glx-+1 addressing-modes-ptr)))))))))
@@ -101,22 +107,23 @@ the opcode at the location MEMPTR (depending on how long the opcode is), and the
 (defun glx-decode-args (arg-spec addressing-modes-ptr)
   (glx-process-args arg-spec addressing-modes-ptr #'glx-decode-load-arg #'glx-decode-store-arg))
 
-(defun glx-get-opcode-args (opcode addressing-modes)
+(defun glx-get-opcode-args (opcode addressing-modes-ptr)
   "Returns a pointer to the next instruction and a list of arguments for the instruction
-whose addressing modes are at the location in the Glulx VM memory given by ADDRESSING-MODES"
+whose addressing modes are at the location in the Glulx VM memory given by ADDRESSING-MODES-PTR.
+Also returns the addressing modes themselves. "
   (let ((instruction (gethash opcode glx-instructions)))
     (if instruction
-        (glx-decode-args (glx-instruction-arg-list instruction) addressing-modes)
+        (glx-decode-args (glx-instruction-arg-list instruction) addressing-modes-ptr)
       (signal 'glx-exec-error (list "Unknown opcode" opcode)))))
 
 (defsubst glx-process-instruction-result (result)
   (not (or (eq result 'glk-no-return)
            (eq result 'glx-quit))))
 
-(defun glx-execute-instruction (opcode args)
+(defun glx-execute-instruction (opcode args modes)
   (let ((instruction (gethash opcode glx-instructions)))
     (glx-log "executing instruction: %s" (glx-format-exec-log (glx-instruction-name instruction) args))
-    (glx-process-instruction-result (apply (glx-instruction-function instruction) args))))
+    (glx-process-instruction-result (apply (glx-instruction-function instruction) modes args))))
 
 (defun glx-format-exec-log (opcode args)
   (apply #'concat
@@ -140,12 +147,12 @@ whose addressing modes are at the location in the Glulx VM memory given by ADDRE
     "0"))
 
 (defun glx-execute-uncompiled-instruction ()
-  (multiple-value-bind (addressing-modes opcode) (glx-get-opcode *glx-pc*)
+  (multiple-value-bind (addressing-modes-ptr opcode) (glx-get-opcode *glx-pc*)
     (glx-log "Could not compile instruction at %08x" (glx-32->int *glx-pc*))
-    (multiple-value-bind (next-instruction args)
-        (glx-get-opcode-args opcode addressing-modes)
+    (multiple-value-bind (next-instruction args modes)
+        (glx-get-opcode-args opcode addressing-modes-ptr)
       (setq *glx-pc* next-instruction)
-      (glx-execute-instruction opcode args))))
+      (glx-execute-instruction opcode args modes))))
 
 (defun glx-execute-next-instruction ()
   (if *glx-compile*

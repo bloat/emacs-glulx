@@ -52,22 +52,23 @@ number of bytes used from the instructions argument data."
       (glx-decode-store-arg mode arg-ptr)
     (values (list #'identity store) bytes-read)))
 
-(defun glx-compile-args (arg-spec addressing-modes)
-  (glx-process-args arg-spec addressing-modes #'glx-compile-load-arg #'glx-compile-store-arg))
+(defun glx-compile-args (arg-spec addressing-modes-ptr)
+  (glx-process-args arg-spec addressing-modes-ptr #'glx-compile-load-arg #'glx-compile-store-arg))
 
 (defun glx-compile-instruction (ptr)
-  (multiple-value-bind (addressing-modes opcode)
+  (multiple-value-bind (addressing-modes-ptr opcode)
       (glx-get-opcode ptr)
     (let ((instruction (gethash opcode glx-instructions)))
       (if instruction
-          (multiple-value-bind (next-instruction compiled-args)
-              (glx-compile-args (second instruction) addressing-modes)
-            (values next-instruction (list (third instruction) compiled-args)))
+          (multiple-value-bind (next-instruction compiled-args modes)
+              (glx-compile-args (glx-instruction-arg-list instruction) addressing-modes-ptr)
+            (values next-instruction (list (glx-instruction-function instruction) modes compiled-args)))
         (signal 'glx-exec-error (list "Unknown opcode" opcode))))))
 
 (defun glx-execute-compiled-instruction (compiled-inst)
-  (apply (first compiled-inst)
+  (apply (first compiled-inst) ; The instruction function
+         (second compiled-inst) ; The addressing modes used to load the args
          (mapcar #'(lambda (compiled-arg) (funcall (first compiled-arg) (second compiled-arg)))
-                 (second compiled-inst))))
+                 (third compiled-inst)))) ; Call the functions to get the values for the opcodes arguments.
 
 (provide 'glx-compile)

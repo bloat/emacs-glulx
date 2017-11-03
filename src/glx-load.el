@@ -71,7 +71,7 @@
 
 (defun glx-cleanup ()
   (when *glx-unexpected-exit*
-    ;;      (glki-end)
+    (glki-end)
     (setq *glx-stack* nil)
     (setq *glx-string-table* nil)
     (setq *glx-memory* nil)

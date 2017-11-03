@@ -21,7 +21,7 @@
 
 (defun glx-branch-or-return (offset)
   (if (or (equal offset glx-0) (equal offset glx-1))
-      (glx-instruction-return offset)
+      (glx-instruction-return nil offset)
     (setq *glx-pc* (glx-- (glx-+ *glx-pc* offset) glx-2))
     (glx-log "Branching - set PC to %x" (glx-32->int *glx-pc*))))
 
@@ -31,7 +31,7 @@
        (glx-defopcode ',name ,opcode ',(make-list (+ 1 (length args)) 'load) #',fun-name)
 
        (defun ,fun-name
-         (,@args offset)
+         (modes ,@args offset)
          (when ,test (glx-branch-or-return offset))))))
 
 (defmacro glx-def-store (name opcode args calc &optional bytes)
@@ -40,10 +40,10 @@
        (glx-defopcode ',name ,opcode '(,@(make-list (length args) 'load) store) #',fun-name)
 
        (defun ,fun-name
-         (,@args store)
+         (modes ,@args store)
          (funcall (first store) (second store) ,calc ,(if bytes bytes 4))))))
 
-(glx-defopcode 'nop 0 nil #'(lambda () nil))
+(glx-defopcode 'nop 0 nil #'(lambda (modes) nil))
 
 (glx-def-store add #x10 (l1 l2) (glx-+ l1 l2))
 (glx-def-store sub #x11 (l1 l2) (glx-- l1 l2))
@@ -83,7 +83,7 @@
           ((eq store-fun #'glx-store-stack)
            (values 3 glx-0)))))
 
-(defun glx-instruction-call (fun-ptr arg-count store)
+(defun glx-instruction-call (modes fun-ptr arg-count store)
   (let (args)
     (dotimes (i (glx-32->int arg-count))
       (push (glx-value-pop) args))
@@ -93,7 +93,7 @@
 
 (glx-defopcode 'call #x30 '(load load store) #'glx-instruction-call)
 
-(defun glx-instruction-return (result)
+(defun glx-instruction-return (modes result)
   (let* ((call-stub (glx-return-from-function))
          (dest-type (car call-stub))
          (store-fun (cond ((= 3 dest-type) #'glx-store-stack)
@@ -105,13 +105,17 @@
 (glx-defopcode 'return #x31 '(load) #'glx-instruction-return)
 
 (glx-def-store copy #x40 (data) data)
-(glx-def-store copys #x41 (data) (glx-32-trunc data 2) 2)
-(glx-def-store copyb #x42 (data) (glx-32-trunc data 1) 1)
+(glx-def-store copys #x41 (data) (if (or (= (first modes) 3) (= (first modes) 8))
+                                     (glx-32-lo-trunc data 2)
+                                   (glx-32-hi-trunc data 2)) 2)
+(glx-def-store copyb #x42 (data) (if (or (= (first modes) 3) (= (first modes) 8))
+                                     (glx-32-lo-trunc data 1)
+                                   (glx-32-hi-trunc data 1)) 1)
 (glx-def-store aload #x48 (l1 l2) (glx-memory-get-32 (glx-+ l1 (glx-*-byte l2 4))))
 (glx-def-store aloads #x49 (l1 l2) (glx-memory-get-16 (glx-+ l1 (glx-*-byte l2 2))))
 (glx-def-store aloadb #x4a (l1 l2) (glx-memory-get-byte (glx-+ l1 l2)))
 
-(defun glx-instruction-astore (l1 l2 l3)
+(defun glx-instruction-astore (modes l1 l2 l3)
   (glx-store-mem (glx-+ l1 (glx-*-byte l2 4)) l3))
 
 (glx-defopcode 'astore #x4c '(load load load) #'glx-instruction-astore)
@@ -122,7 +126,7 @@
     (values (expt 2 (if (< l2intmod 0) (+ 8 l2intmod) l2intmod))
             (glx-+ l1 (glx-32 (+ (/ l2int 8) (if (and (not (zerop l2intmod)) (< l2int 0)) -1 0)))))))
 
-(defun glx-instruction-astoreb (l1 l2 l3)
+(defun glx-instruction-astoreb (modes l1 l2 l3)
   (glx-store-mem (glx-+ l1 l2) l3 1))
 
 (glx-defopcode 'astoreb #x4e '(load load load) #'glx-instruction-astoreb)
@@ -130,7 +134,7 @@
                (multiple-value-bind (bit-mask memptr) (get-bit-access-vars l1 l2)
                    (if (= 0 (logand bit-mask (glx-memory-get-byte-int memptr))) glx-0 glx-1)))
 
-(defun glx-instruction-astorebit (l1 l2 l3)
+(defun glx-instruction-astorebit (modes l1 l2 l3)
   (multiple-value-bind (bit-mask memptr) (get-bit-access-vars l1 l2)
     (glx-memory-set memptr
                     (glx-32 (if (glx-0-p l3)
@@ -142,15 +146,15 @@
 
 (glx-def-store stkcount #x50 () (glx-stack-count))
 
-(defun glx-instruction-stkcopy (count)
+(defun glx-instruction-stkcopy (modes count)
   (dolist (value (reverse (glx-stack-peek (glx-32->int count))))
     (glx-value-push value)))
 
 (glx-defopcode 'stkcopy #x54 '(load) #'glx-instruction-stkcopy)
 
-(glx-defopcode 'streamchar #x70 '(load) #'(lambda (l1) (if *glx-glk-selected* (glk-put-char (glx-32->char l1)))))
-(glx-defopcode 'streamnum #x71 '(load) #'(lambda (l1) (if *glx-glk-selected* (glk-put-string (glx-32->dec-string l1)))))
-(glx-defopcode 'streamstr #x72 '(load) #'(lambda (l1) (if *glx-glk-selected* (glk-put-string (glx-get-string l1)))))
+(glx-defopcode 'streamchar #x70 '(load) #'(lambda (modes l1) (if *glx-glk-selected* (glk-put-char (glx-32->char l1)))))
+(glx-defopcode 'streamnum #x71 '(load) #'(lambda (modes l1) (if *glx-glk-selected* (glk-put-string (glx-32->dec-string l1)))))
+(glx-defopcode 'streamstr #x72 '(load) #'(lambda (modes l1) (if *glx-glk-selected* (glk-put-string (glx-get-string l1)))))
 
 (glx-def-store gestalt #x100 (l1 l2) (cond ((equal glx-0 l1) (glx-32 0 1 3))
                                            ((equal glx-1 l1) glx-0)
@@ -164,13 +168,13 @@
 
 (glx-def-store getmemsize #x102 () (glx-32 (length *glx-memory*)))
 (glx-def-store random #x110 (l1) (glx-32-rand l1))
-(glx-defopcode 'quit #x120 '() #'(lambda () 'glx-quit))
+(glx-defopcode 'quit #x120 '() #'(lambda (modes) 'glx-quit))
 (glx-def-store saveundo #x125 () (progn (glx-save-undo) glx-0))
 (glx-def-store restoreundo #x126 () (glx-restore-undo))
 
 (glx-def-store glk #x130 (l1 l2) (glx-glk-call (glx-32->int l1) (glx-32->int l2)))
 
-(defun glx-instruction-setiosys (system rock)
+(defun glx-instruction-setiosys (modes system rock)
   (setq *glx-glk-selected* (equal system glx-2))
   (if (not (or (equal system glx-2) (equal system glx-0)))
       (signal 'glx-glk-error (list "Unknown io system" system))))
@@ -185,16 +189,16 @@
       (glx-get-destinations store)
     (glx-call-function fun-ptr dest-type dest-addr arg-list)))
 
-(defun glx-instruction-callf (fun-ptr store)
+(defun glx-instruction-callf (modes fun-ptr store)
   (glx-instruction-type-callf fun-ptr nil store))
 
-(defun glx-instruction-callfi (fun-ptr arg store)
+(defun glx-instruction-callfi (modes fun-ptr arg store)
   (glx-instruction-type-callf fun-ptr (list arg) store))
 
-(defun glx-instruction-callfii (fun-ptr arg1 arg2 store)
+(defun glx-instruction-callfii (modes fun-ptr arg1 arg2 store)
   (glx-instruction-type-callf fun-ptr (list arg1 arg2) store))
 
-(defun glx-instruction-callfiii (fun-ptr arg1 arg2 arg3 store)
+(defun glx-instruction-callfiii (modes fun-ptr arg1 arg2 arg3 store)
   (glx-instruction-type-callf fun-ptr (list arg1 arg2 arg3) store))
 
 (glx-defopcode 'callf #x160 '(load store) #'glx-instruction-callf)

@@ -245,7 +245,10 @@ Returns the result and the remainder."
 (defun glx-32->char (value)
   (fourth (glx-32-get-bytes-as-list-big-endian value)))
 
-(defun glx-32-trunc (value bytes)
+(defun glx-32-lo-trunc (value bytes)
+  (apply #'glx-32 (reverse (subseq (glx-32-get-bytes-as-list-big-endian value) (- 4 bytes) 4))))
+
+(defun glx-32-hi-trunc (value bytes)
   (apply #'glx-32 (reverse (subseq (glx-32-get-bytes-as-list-big-endian value) 0 bytes))))
 
 (defun glx-32-rand (limit)

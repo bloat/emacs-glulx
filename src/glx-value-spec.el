@@ -231,12 +231,19 @@
   (should (equal (glx-32->char (glx-32 97)) ?a))
   (should (equal (glx-32->char (glx-32 97 5 6)) ?a)))
 
-(ert-deftest test-truncate ()
-  "Test truncate"
+(ert-deftest test-truncate-hi ()
+  "Test truncate - keep high bits"
   :tags '(32-bit)
-  (should (equal (glx-32-trunc (glx-32 9 8 7 6) 1) (glx-32 6)))
-  (should (equal (glx-32-trunc (glx-32 9 8 7 6) 2) (glx-32 7 6)))
-  (should (equal (glx-32-trunc (glx-32 9 8 7 6) 3) (glx-32 8 7 6))))
+  (should (equal (glx-32-hi-trunc (glx-32 9 8 7 6) 1) (glx-32 6)))
+  (should (equal (glx-32-hi-trunc (glx-32 9 8 7 6) 2) (glx-32 7 6)))
+  (should (equal (glx-32-hi-trunc (glx-32 9 8 7 6) 3) (glx-32 8 7 6))))
+
+(ert-deftest test-truncate-lo ()
+  "Test truncate - keep low bits"
+  :tags '(32-bit)
+  (should (equal (glx-32-lo-trunc (glx-32 9 8 7 6) 1) (glx-32 9)))
+  (should (equal (glx-32-lo-trunc (glx-32 9 8 7 6) 2) (glx-32 9 8)))
+  (should (equal (glx-32-lo-trunc (glx-32 9 8 7 6) 3) (glx-32 9 8 7))))
 
 (ert-deftest test-unsigned-greater-than ()
   "Test unsigned greater than"
