@@ -231,7 +231,7 @@
   :tags '(instructions)
 
   (let ((*glx-memory* [0 1 2 3 4 5 6 7 8 9 10])
-        (*glx-stack* (list (list nil))))
+        (*glx-stack* `((()))))
     (glx-instruction-aload nil glx-2 glx-1 (list #'glx-store-stack nil))
     (should (equal *glx-stack* (list (list (list (glx-32 9 8 7 6))))))))
 
@@ -662,3 +662,27 @@
     (cl-letf (((symbol-function 'glx-stack-count) (lambda () glx-2)))
       (glx-instruction-stkcount nil (list #'glx-store-mem glx-4))
       (should (equal *glx-memory* [0 0 0 0 0 0 0 2])))))
+
+(ert-deftest sexb-instruction ()
+  "sexb instruction"
+  :tags '(instructions)
+
+  (let ((*glx-memory* (make-vector 8 0)))
+    (glx-instruction-sexb nil (glx-32 150 1 2 3) (list #'glx-store-mem glx-4))
+    (should (equal *glx-memory* [0 0 0 0 255 255 255 150])))
+
+  (let ((*glx-memory* (make-vector 8 0)))
+    (glx-instruction-sexb nil (glx-32 18 1 2 3) (list #'glx-store-mem glx-4))
+    (should (equal *glx-memory* [0 0 0 0 0 0 0 18]))))
+
+(ert-deftest sexs-instruction ()
+  "sexs instruction"
+  :tags '(instructions)
+  
+  (let ((*glx-memory* (make-vector 8 0)))
+    (glx-instruction-sexs nil (glx-32 150 150 2 3) (list #'glx-store-mem glx-4))
+    (should (equal *glx-memory* [0 0 0 0 255 255 150 150])))
+
+  (let ((*glx-memory* (make-vector 8 0)))
+    (glx-instruction-sexs nil (glx-32 18 18 2 3) (list #'glx-store-mem glx-4))
+    (should (equal *glx-memory* [0 0 0 0 0 0 18 18]))))
