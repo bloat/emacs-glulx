@@ -397,6 +397,13 @@
     (glx-instruction-astore nil glx-4 glx-2 glx-8)
     (should (equal *glx-memory* [0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 8]))))
 
+(ert-deftest astores-instruction ()
+  "astores instruction"
+  :tags '(instructions)
+  (let ((*glx-memory* (make-vector 10 0)))
+    (glx-instruction-astores nil glx-4 glx-2 glx-8)
+    (should (equal *glx-memory* [0 0 0 0 0 0 0 0 0 8]))))
+
 (ert-deftest copys-instruction ()
   "copys instruction"
   :tags '(instructions)

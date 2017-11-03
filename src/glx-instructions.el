@@ -123,24 +123,30 @@
 (glx-def-store aloads #x49 (l1 l2) (glx-memory-get-16 (glx-+ l1 (glx-*-byte l2 2))))
 (glx-def-store aloadb #x4a (l1 l2) (glx-memory-get-byte (glx-+ l1 l2)))
 
-(defun glx-instruction-astore (modes l1 l2 l3)
-  (glx-store-mem (glx-+ l1 (glx-*-byte l2 4)) l3))
-
-(glx-defopcode 'astore #x4c '(load load load) #'glx-instruction-astore)
-
 (defun get-bit-access-vars (l1 l2)
   (let* ((l2int (glx-s32->int l2))
          (l2intmod (% l2int 8)))
     (values (expt 2 (if (< l2intmod 0) (+ 8 l2intmod) l2intmod))
             (glx-+ l1 (glx-32 (+ (/ l2int 8) (if (and (not (zerop l2intmod)) (< l2int 0)) -1 0)))))))
 
+(glx-def-store aloadbit #x4b (l1 l2)
+               (multiple-value-bind (bit-mask memptr) (get-bit-access-vars l1 l2)
+                 (if (= 0 (logand bit-mask (glx-memory-get-byte-int memptr))) glx-0 glx-1)))
+
+(defun glx-instruction-astore (modes l1 l2 l3)
+  (glx-store-mem (glx-+ l1 (glx-*-byte l2 4)) l3))
+
+(glx-defopcode 'astore #x4c '(load load load) #'glx-instruction-astore)
+
+(defun glx-instruction-astores (modes l1 l2 l3)
+  (glx-store-mem (glx-+ l1 (glx-*-byte l2 2)) l3 2))
+
+(glx-defopcode 'astores #x4d '(load load load) #'glx-instruction-astores)
+
 (defun glx-instruction-astoreb (modes l1 l2 l3)
   (glx-store-mem (glx-+ l1 l2) l3 1))
 
 (glx-defopcode 'astoreb #x4e '(load load load) #'glx-instruction-astoreb)
-(glx-def-store aloadbit #x4b (l1 l2)
-               (multiple-value-bind (bit-mask memptr) (get-bit-access-vars l1 l2)
-                   (if (= 0 (logand bit-mask (glx-memory-get-byte-int memptr))) glx-0 glx-1)))
 
 (defun glx-instruction-astorebit (modes l1 l2 l3)
   (multiple-value-bind (bit-mask memptr) (get-bit-access-vars l1 l2)
