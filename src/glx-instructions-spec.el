@@ -94,17 +94,20 @@
     (glx-instruction-jlt nil (glx-32 -2) (glx-32 -2) glx-8)
     (should (equal *glx-pc* (glx-32 9)))
     (glx-instruction-jlt nil (glx-32 -2) (glx-32 1) glx-8)
-    (should (equal *glx-pc* (glx-32 15))))
+    (should (equal *glx-pc* (glx-32 15)))
+    (glx-instruction-jlt nil glx-2 (glx-32 255 255 255 127) glx-8)
+    (should (equal *glx-pc* (glx-32 21)))
+    (glx-instruction-jlt nil glx-2 (glx-32 0 0 0 128) glx-8)
+    (should (equal *glx-pc* (glx-32 21)))
+    (glx-instruction-jlt nil (glx-32 -2) (glx-32 255 255 255 127) glx-8)
+    (should (equal *glx-pc* (glx-32 27)))
+    (glx-instruction-jlt nil (glx-32 -2) (glx-32 0 0 0 128) glx-8)
+    (should (equal *glx-pc* (glx-32 27))))
 
   (let (return-was-called)
-    (cl-flet ((test-glx-instruction-return (modes result) (setq return-was-called result)))
-      (unwind-protect
-          (progn
-            (advice-add 'glx-instruction-return :override #'test-glx-instruction-return '((name . test-glx-instruction-return)))
-            
-            (glx-instruction-jlt nil glx-1 glx-2 glx-1)
-            (should (equal return-was-called glx-1)))
-        (advice-remove 'glx-instruction-return 'test-glx-instruction-return)))))
+    (cl-letf (((symbol-function 'glx-instruction-return) (lambda (modes result) (setq return-was-called result))))
+      (glx-instruction-jlt nil glx-1 glx-2 glx-1)
+      (should (equal return-was-called glx-1)))))
 
 (ert-deftest getmemsize-instruction ()
   "getmemsize instruction"
@@ -189,7 +192,15 @@
     (glx-instruction-jge nil (glx-32 -2) (glx-32 -2) glx-8)
     (should (equal *glx-pc* (glx-32 21)))
     (glx-instruction-jge nil (glx-32 1) (glx-32 -2) glx-8)
-    (should (equal *glx-pc* (glx-32 27)))))
+    (should (equal *glx-pc* (glx-32 27)))
+    (glx-instruction-jge nil glx-2 (glx-32 255 255 255 127) glx-8)
+    (should (equal *glx-pc* (glx-32 27)))
+    (glx-instruction-jge nil glx-2 (glx-32 0 0 0 128) glx-8)
+    (should (equal *glx-pc* (glx-32 33)))
+    (glx-instruction-jge nil (glx-32 -2) (glx-32 255 255 255 127) glx-8)
+    (should (equal *glx-pc* (glx-32 33)))
+    (glx-instruction-jge nil (glx-32 -2) (glx-32 0 0 0 128) glx-8)
+    (should (equal *glx-pc* (glx-32 39)))))
 
 (ert-deftest jle-instruction ()
   "jle instruction"
@@ -209,7 +220,15 @@
     (glx-instruction-jle nil (glx-32 -2) (glx-32 -2) glx-8)
     (should (equal *glx-pc* (glx-32 21)))
     (glx-instruction-jle nil (glx-32 1) (glx-32 -2) glx-8)
-    (should (equal *glx-pc* (glx-32 21)))))
+    (should (equal *glx-pc* (glx-32 21)))
+    (glx-instruction-jle nil glx-2 (glx-32 255 255 255 127) glx-8)
+    (should (equal *glx-pc* (glx-32 27)))
+    (glx-instruction-jle nil glx-2 (glx-32 0 0 0 128) glx-8)
+    (should (equal *glx-pc* (glx-32 27)))
+    (glx-instruction-jle nil (glx-32 -2) (glx-32 255 255 255 127) glx-8)
+    (should (equal *glx-pc* (glx-32 33)))
+    (glx-instruction-jle nil (glx-32 -2) (glx-32 0 0 0 128) glx-8)
+    (should (equal *glx-pc* (glx-32 33)))))
 
 (ert-deftest aloadb-instruction ()
   "aloadb instruction"
@@ -237,7 +256,15 @@
     (glx-instruction-jgt nil (glx-32 -2) (glx-32 -2) glx-8)
     (should (equal *glx-pc* (glx-32 9)))
     (glx-instruction-jgt nil (glx-32 1) (glx-32 -2) glx-8)
-    (should (equal *glx-pc* (glx-32 15)))))
+    (should (equal *glx-pc* (glx-32 15)))
+    (glx-instruction-jgt nil glx-2 (glx-32 255 255 255 127) glx-8)
+    (should (equal *glx-pc* (glx-32 15)))
+    (glx-instruction-jgt nil glx-2 (glx-32 0 0 0 128) glx-8)
+    (should (equal *glx-pc* (glx-32 21)))
+    (glx-instruction-jgt nil (glx-32 -2) (glx-32 255 255 255 127) glx-8)
+    (should (equal *glx-pc* (glx-32 21)))
+    (glx-instruction-jgt nil (glx-32 -2) (glx-32 0 0 0 128) glx-8)
+    (should (equal *glx-pc* (glx-32 27)))))
 
 (ert-deftest aload-instruction ()
   "aload instruction"
