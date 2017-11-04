@@ -175,8 +175,9 @@
 (ert-deftest peek-at-the-stack ()
   "Should be able to peek at the stack"
   :tags '(stack)
-  (let ((*glx-stack* `(((,glx-0 ,glx-1 ,glx-2)))))
-    (should (equal (glx-stack-peek 3) (list glx-0 glx-1 glx-2)))))
+  (let ((*glx-stack* `(((,glx-0 ,glx-1 ,glx-2) ()))))
+    (should (equal (glx-stack-peek 3) (list glx-0 glx-1 glx-2)))
+    (should (equal (glx-stack-peek 2) (list glx-0 glx-1)))))
 
 (ert-deftest tailcall ()
   "Manipulate the stack to implement a tail call"

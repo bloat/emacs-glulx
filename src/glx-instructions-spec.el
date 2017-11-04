@@ -397,6 +397,36 @@
     (glx-instruction-mul nil glx-5 glx-8 (list #'glx-store-mem glx-4))
     (should (equal *glx-memory* [0 0 0 0 0 0 0 40 0 0 0 0]))))
 
+(ert-deftest stkpeek-instruction ()
+  "stkpeek instruction"
+  :tags '(instructions)
+
+  (let ((*glx-stack* `(((,(glx-32 -1) ,glx-1 ,glx-2 ,glx-3) ())))
+        (*glx-memory* (make-vector 5 0)))
+    (glx-instruction-stkpeek nil glx-3 (list #'glx-store-mem glx-1))
+    (glx-instruction-stkpeek nil glx-0 (list #'glx-store-stack nil))
+    (should (equal *glx-stack* `(((,(glx-32 -1) ,(glx-32 -1) ,glx-1 ,glx-2 ,glx-3) ())))) 
+    (should (equal *glx-memory* [0 0 0 0 3]))))
+
+(ert-deftest stkswap-instruction ()
+  "stkswap instruction"
+  :tags '(instructions)
+
+  (let ((*glx-stack* `(((,(glx-32 -1) ,glx-1 ,glx-2 ,glx-3) ()))))
+    (glx-instruction-stkswap nil)
+    (should (equal *glx-stack* `(((,glx-1 ,(glx-32 -1) ,glx-2 ,glx-3) ()))))))
+
+(ert-deftest stkroll-instruction ()
+  "stkroll instruction"
+  :tags '(instructions)
+
+  (let ((*glx-stack* `(((,glx-0 ,glx-1 ,glx-2 ,glx-3 ,glx-4 ,glx-5 ,(glx-32 6) ,(glx-32 7) ,glx-8) ()))))
+    (glx-instruction-stkroll nil glx-5 glx-1)
+    (should (equal *glx-stack* `(((,glx-1 ,glx-2 ,glx-3 ,glx-4 ,glx-0 ,glx-5 ,(glx-32 6) ,(glx-32 7) ,glx-8) ()))))
+    (glx-instruction-stkroll nil (glx-32 9) (glx-32 -3))
+    (should (equal *glx-stack* `(((,(glx-32 6) ,(glx-32 7) ,glx-8 ,glx-1 ,glx-2 ,glx-3 ,glx-4 ,glx-0 ,glx-5) ()))))
+    (glx-instruction-stkroll nil glx-0 glx-1)))
+
 (ert-deftest stkcopy-instruction ()
   "stkcopy instruction"
   :tags '(instructions)

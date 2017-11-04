@@ -186,6 +186,33 @@
 
 (glx-def-store stkcount #x50 () (glx-stack-count))
 
+(glx-def-store stkpeek #x51 (idx) (car (last (glx-stack-peek (+ 1 (glx-32->int idx))))))
+
+(defun glx-instruction-stkswap (modes)
+  (let ((top (glx-value-pop))
+        (next (glx-value-pop)))
+    (glx-value-push top)
+    (glx-value-push next)))
+
+(glx-defopcode 'stkswap #x52 () #'glx-instruction-stkswap)
+
+(defun glx-instruction-stkroll (modes vals rot)
+  (when (and (not (glx-0-p vals)) (not (glx-0-p rot)))
+    (let (popped
+          (left (glx-neg-p rot))
+          (rotmod (glx-abs (second (glx-/ rot vals)))))
+      (dotimes (n (glx-32->int vals))
+        (push (glx-value-pop) popped))
+      (while (glx-32-u> rotmod glx-0)
+        (if left
+            (setq popped (append (cdr popped) (list (car popped))))
+          (setq popped (cons (car (last popped)) (butlast popped))))
+        (setq rotmod (glx-- rotmod glx-1)))
+      (dolist (elt popped)
+        (glx-value-push elt)))))
+
+(glx-defopcode 'stkroll #x53 '(load load) #'glx-instruction-stkroll)
+
 (defun glx-instruction-stkcopy (modes count)
   (dolist (value (reverse (glx-stack-peek (glx-32->int count))))
     (glx-value-push value)))

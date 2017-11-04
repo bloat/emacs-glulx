@@ -121,6 +121,10 @@ on to the right."
 (defun glx-/ (x y)
   "Long division using the four radix 256 digits of a glx-32.
 Returns the result and the remainder."
+
+  (when (equal y glx-0)
+    (signal 'glx-value-error (list "Division by zero")))
+  
   (let* ((x-abs (glx-abs x))
          (y-abs (glx-abs y))
          (x-neg (glx-negp x))
