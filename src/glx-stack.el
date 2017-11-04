@@ -37,6 +37,10 @@
     (subseq (caar *glx-stack*) 0 count)))
 
 (defun glx-push-call-stub (dest-type dest-addr)
+  "A call stub is a list of three elements, DEST-TYPE and DEST-ADDR 
+describe where to put the result of the call, and the third element is 
+the address of the next instruction after the one that caused this call
+stub to be created. "
   (glx-stack-push (list dest-type dest-addr *glx-pc*)))
 
 (defun glx-pad-2-p (length alignment)
@@ -132,6 +136,15 @@ the locals section of the call frame, or pushed onto the stack following the cal
 appropriately. Pushes necessary data structures onto the stack. The call stub will
 contain DEST-TYPE and DEST-ADDR."
   (glx-push-call-stub dest-type dest-addr)
+  (glx-build-call-frame function-ptr)
+  (glx-handle-function-args function-ptr args)
+  (setq *glx-pc* (glx-get-function-code-start function-ptr)))
+
+(defun glx-tailcall-function (function-ptr args)
+  "Calls the function pointed to by FUNCTION-PTR. Replaces the current call frame 
+with a new call frame, does not create a new call stub, but retains the previous one
+which will be used when returning from this function."
+  (glx-stack-pop)
   (glx-build-call-frame function-ptr)
   (glx-handle-function-args function-ptr args)
   (setq *glx-pc* (glx-get-function-code-start function-ptr)))

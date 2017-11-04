@@ -14,31 +14,44 @@
   :tags '(instructions)
   (let ((call-args nil))
 
-    (cl-flet ((test-glx-call-function (fptr dt da args) (setq call-args (list fptr dt da args))))
+    (cl-letf (((symbol-function 'glx-call-function) (lambda (fptr dt da args) (setq call-args (list fptr dt da args)))))
 
-      ;; unwind-protect to override and reinstate (using advice) the glx-call-function definition
-      (unwind-protect
-          (progn
-            (advice-add 'glx-call-function :override #'test-glx-call-function '((name . test-glx-call-function)))
+      (glx-instruction-call nil glx-0 glx-0 (list #'glx-store-throw nil))
+      (should (equal call-args (list glx-0 0 glx-0 nil)))
 
-            (glx-instruction-call nil glx-0 glx-0 (list #'glx-store-throw nil))
-            (should (equal call-args (list glx-0 0 glx-0 nil)))
+      ;; two args call - store result in memory
+      (let ((*glx-stack* `(((,glx-2 ,glx-3) ()))))
+        (glx-instruction-call nil glx-0 glx-2 (list #'glx-store-mem glx-4))
+        (should (equal call-args (list glx-0 1 glx-4 (list glx-2 glx-3))))
+        (should (equal *glx-stack* '((() ())))))
 
-            ;; two args call - store result in memory
-            (let ((*glx-stack* (list (list (list glx-2 glx-3)))))
-              (glx-instruction-call nil glx-0 glx-2 (list #'glx-store-mem glx-4))
-              (should (equal call-args (list glx-0 1 glx-4 (list glx-2 glx-3))))
-              (should (equal *glx-stack* '((())))))
+      ;; zero args call - push result
+      (glx-instruction-call nil glx-0 glx-0 (list #'glx-store-stack nil))
+      (should (equal call-args (list glx-0 3 glx-0 nil)))
 
-            ;; zero args call - push result
-            (glx-instruction-call nil glx-0 glx-0 (list #'glx-store-stack nil))
-            (should (equal call-args (list glx-0 3 glx-0 nil)))
+      ;; zero args call - store result in a local
+      (glx-instruction-call nil glx-0 glx-0 (list #'glx-store-local glx-5))
+      (should (equal call-args (list glx-0 2 glx-5 nil))))))
 
-            ;; zero args call - store result in a local
-            (glx-instruction-call nil glx-0 glx-0 (list #'glx-store-local glx-5))
-            (should (equal call-args (list glx-0 2 glx-5 nil))))
+(ert-deftest tailcall-instruction ()
+  "tailcall instruction"
+  :tags '(instructions)
+  (let ((call-args nil))
 
-        (advice-remove 'glx-call-function 'test-glx-call-function)))))
+    (cl-letf (((symbol-function 'glx-tailcall-function) (lambda (fptr args) (setq call-args (list fptr args)))))
+
+      (glx-instruction-tailcall nil glx-0 glx-0)
+      (should (equal call-args (list glx-0 nil)))
+
+      ;; two args call
+      (let ((*glx-stack* `(((,glx-2 ,glx-3) ()))))
+        (glx-instruction-tailcall nil glx-0 glx-2)
+        (should (equal call-args (list glx-0 (list glx-2 glx-3))))
+        (should (equal *glx-stack* '((() ())))))
+
+      ;; zero args call
+      (glx-instruction-tailcall nil glx-0 glx-0)
+      (should (equal call-args (list glx-0 nil))))))
 
 (ert-deftest copy-instruction ()
   "copy instruction"
@@ -231,9 +244,9 @@
   :tags '(instructions)
 
   (let ((*glx-memory* [0 1 2 3 4 5 6 7 8 9 10])
-        (*glx-stack* `((()))))
+        (*glx-stack* '((() ()))))
     (glx-instruction-aload nil glx-2 glx-1 (list #'glx-store-stack nil))
-    (should (equal *glx-stack* (list (list (list (glx-32 9 8 7 6))))))))
+    (should (equal *glx-stack* `(((,(glx-32 9 8 7 6)) ()))))))
 
 (ert-deftest jeq-instruction ()
   "jeq instruction"

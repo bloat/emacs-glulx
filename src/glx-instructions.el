@@ -104,6 +104,14 @@
 
 (glx-defopcode 'return #x31 '(load) #'glx-instruction-return)
 
+(defun glx-instruction-tailcall (modes fun-ptr arg-count)
+  (let (args)
+    (dotimes (i (glx-32->int arg-count))
+      (push (glx-value-pop) args))
+    (glx-tailcall-function fun-ptr (nreverse args))))
+
+(glx-defopcode 'tailcall #x34 '(load load) #'glx-instruction-tailcall)
+
 (glx-def-store copy #x40 (data) data)
 (glx-def-store copys #x41 (data) (if (or (= (first modes) 3) (= (first modes) 8))
                                      (glx-32-lo-trunc data 2)

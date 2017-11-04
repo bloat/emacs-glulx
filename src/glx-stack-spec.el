@@ -29,7 +29,7 @@
   (let ((*glx-stack* nil)
         (*glx-pc* (glx-32 0 45)))
     (glx-push-call-stub 0 (glx-32 22 4 3 2))
-    (should (equal *glx-stack* (list (list 0 (glx-32 22 4 3 2) *glx-pc*))))))
+    (should (equal *glx-stack* `((0 ,(glx-32 22 4 3 2) ,*glx-pc*))))))
 
 (ert-deftest build-a-new-call-frame---no-locals ()
   "Should be able to build a new call frame - no locals"
@@ -45,7 +45,7 @@
   (let ((*glx-stack* ())
         (*glx-memory* [#xc0 1 1 0 0]))
     (glx-build-call-frame glx-0)
-    (should (equal *glx-stack* (list (list nil (list (cons glx-0 glx-0))))))))
+    (should (equal *glx-stack* `((() (,(cons glx-0 glx-0))))))))
 
 (ert-deftest build-a-new-call-frame---5-8-bit-locals ()
   "Should be able to build a new call frame - 5 8 bit locals"
@@ -53,11 +53,11 @@
   (let ((*glx-stack* nil)
         (*glx-memory* [#xc0 1 5 0 0]))
     (glx-build-call-frame glx-0)
-    (should (equal *glx-stack* (list (list nil (list (cons glx-0 glx-0)
-                                                     (cons glx-1 glx-0)
-                                                     (cons glx-2 glx-0)
-                                                     (cons glx-3 glx-0)
-                                                     (cons glx-4 glx-0))))))))
+    (should (equal *glx-stack* `((() (,(cons glx-0 glx-0)
+                                      ,(cons glx-1 glx-0)
+                                      ,(cons glx-2 glx-0)
+                                      ,(cons glx-3 glx-0)
+                                      ,(cons glx-4 glx-0))))))))
 
 (ert-deftest build-a-new-call-frame---1-16-bit-locals ()
   "Should be able to build a new call frame - 1 16 bit locals"
@@ -65,7 +65,7 @@
   (let ((*glx-stack* nil)
         (*glx-memory* [#xc0 2 1 0 0]))
     (glx-build-call-frame glx-0)
-    (should (equal *glx-stack* (list (list nil (list (cons glx-0 glx-0))))))))
+    (should (equal *glx-stack* `((() (,(cons glx-0 glx-0))))))))
 
 (ert-deftest build-a-new-call-frame---1-8-bit-local-2-16-bit-locals ()
   "Should be able to build a new call frame - 1 8 bit local, 2 16 bit locals"
@@ -73,9 +73,9 @@
   (let ((*glx-stack* nil)
         (*glx-memory* [#xc0 1 1 2 2 0 0]))
     (glx-build-call-frame glx-0)
-    (should (equal *glx-stack* (list (list nil (list (cons glx-0 glx-0)
-                                                            (cons glx-2 glx-0)
-                                                            (cons glx-4 glx-0))))))))
+    (should (equal *glx-stack* `((() (,(cons glx-0 glx-0)
+                                      ,(cons glx-2 glx-0)
+                                      ,(cons glx-4 glx-0))))))))
 
 (ert-deftest build-a-new-call-frame---1-8-_-2-32_-1-16_-3-8 ()
   "Should be able to build a new call frame - 1 8 , 2 32, 1 16, 3 8"
@@ -83,13 +83,13 @@
   (let ((*glx-stack* nil)
         (*glx-memory* [#xc0 1 1 4 2 2 1 1 3 0 0]))
     (glx-build-call-frame glx-0)
-    (should (equal *glx-stack* (list (list nil (list (cons glx-0 glx-0)
-                                                            (cons glx-4 glx-0)
-                                                            (cons glx-8 glx-0)
-                                                            (cons (glx-32 12) glx-0)
-                                                            (cons (glx-32 14) glx-0)
-                                                            (cons (glx-32 15) glx-0)
-                                                            (cons (glx-32 16) glx-0))))))))
+    (should (equal *glx-stack* `((() (,(cons glx-0 glx-0)
+                                      ,(cons glx-4 glx-0)
+                                      ,(cons glx-8 glx-0)
+                                      ,(cons (glx-32 12) glx-0)
+                                      ,(cons (glx-32 14) glx-0)
+                                      ,(cons (glx-32 15) glx-0)
+                                      ,(cons (glx-32 16) glx-0))))))))
 
 (ert-deftest call-a-stack-args-function-with-no-args ()
   "Should be able to call a stack args function with no args"
@@ -129,10 +129,10 @@
         (*glx-memory* [#xc1 1 1 2 1 4 1 0 0])
         (*glx-pc* (glx-32 400)))
     (glx-call-function glx-0 0 glx-0 (list (glx-32 1 2 3 4) (glx-32 1 2 3 4) (glx-32 1 2 3 4)))
-    (should (equal *glx-stack* (list (list nil (list (cons glx-0 glx-1)
-                                                            (cons glx-2 (glx-32 1 2))
-                                                            (cons glx-4 (glx-32 1 2 3 4))))
-                                            (list 0 glx-0 (glx-32 400)))))
+    (should (equal *glx-stack* `((() (,(cons glx-0 glx-1)
+                                      ,(cons glx-2 (glx-32 1 2))
+                                      ,(cons glx-4 (glx-32 1 2 3 4))))
+                                 (0 ,glx-0 ,(glx-32 400)))))
     (should (equal *glx-pc* (glx-32 9)))))
 
 (ert-deftest push-and-pop-a-value-into-the-current-call-frame ()
@@ -168,12 +168,24 @@
 (ert-deftest return-from-a-function ()
   "Should be able to return from a function"
   :tags '(stack)
-  (let ((*glx-stack* (list (list (list nil nil)) (list 0 glx-0 glx-5))))
+  (let ((*glx-stack* `(((() ())) (0 ,glx-0 ,glx-5))))
     (should (equal (glx-return-from-function) (list 0 glx-0 glx-5)))
     (should-not *glx-stack*)))
 
 (ert-deftest peek-at-the-stack ()
   "Should be able to peek at the stack"
   :tags '(stack)
-  (let ((*glx-stack* (list (list (list glx-0 glx-1 glx-2)))))
+  (let ((*glx-stack* `(((,glx-0 ,glx-1 ,glx-2)))))
     (should (equal (glx-stack-peek 3) (list glx-0 glx-1 glx-2)))))
+
+(ert-deftest tailcall ()
+  "Manipulate the stack to implement a tail call"
+  :tags 'stack
+  (let ((*glx-stack* `(((,glx-1) (,(cons glx-0 glx-0))) ; the call frame
+                       (0 ,glx-1 ,glx-2))) ; the call stub
+        (*glx-memory* [#xc0 0 0])
+        (*glx-pc* (glx-32 0 45)))
+    (glx-tailcall-function glx-0 nil)
+    (should (equal *glx-stack* `(((,glx-0) ()) ; new call frame
+                                 (0 ,glx-1 ,glx-2))))  ; call stub is preserved
+    (should (equal *glx-pc* glx-3))))
