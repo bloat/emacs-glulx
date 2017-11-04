@@ -290,6 +290,18 @@
     (glx-instruction-jnz nil (glx-32 -1) glx-8)
     (should (equal *glx-pc* (glx-32 9)))))
 
+(ert-deftest jumpabs-instruction ()
+  "jumpabs instruction"
+  :tags '(instructions)
+
+  (let ((*glx-pc* glx-5))
+    (glx-instruction-jumpabs nil glx-8)
+    (should (equal *glx-pc* glx-8))
+    (glx-instruction-jumpabs nil glx-0)
+    (should (equal *glx-pc* glx-0))
+    (glx-instruction-jumpabs nil glx-1)
+    (should (equal *glx-pc* glx-1))))
+
 (ert-deftest add-instruction ()
   "add instruction"
   :tags '(instructions)

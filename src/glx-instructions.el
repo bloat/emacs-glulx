@@ -189,6 +189,12 @@
                                                                glx-0))))
 
 (glx-def-store getmemsize #x102 () (glx-32 (length *glx-memory*)))
+
+(defun glx-instruction-jumpabs (modes dest)
+  (setq *glx-pc* dest)
+  (glx-log "Branching - set PC to %x" (glx-32->int *glx-pc*)))
+
+(glx-defopcode 'jumpabs #x104 '(load) #'glx-instruction-jumpabs)
 (glx-def-store random #x110 (l1) (glx-32-rand l1))
 (glx-defopcode 'quit #x120 '() #'(lambda (modes) 'glx-quit))
 (glx-def-store saveundo #x125 () (progn (glx-save-undo) glx-0))
