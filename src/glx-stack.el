@@ -21,20 +21,44 @@
   (pop *glx-stack*))
 
 (defun glx-stack-count ()
-  (glx-int->32 (length (caar *glx-stack*))))
+  "The number of stack values in the current call frame"
+  (let ((result 0))
+    (dolist (item (caar *glx-stack*) (glx-32 result))
+      (unless (eq 'catch (first item)) (incf result)))))
 
 (defun glx-value-push (value)
+  "Push a value into the stack of the current call frame"
   (push value (caar *glx-stack*)))
 
 (defun glx-value-pop ()
+  "Pop a value from the stack of the current call frame"
+  (while (eq 'catch (caaaar *glx-stack*))
+    (pop (caar *glx-stack*)))
   (if (not (caar *glx-stack*))
       (signal 'glx-stack-error (list "Can't pop beyond frame length" (car *glx-stack*)))
     (pop (caar *glx-stack*))))
 
 (defun glx-stack-peek (count)
-  (if (> count (length (caar *glx-stack*)))
-      (signal 'glx-stack-error (list "Can't peek beyond frame length" (car *glx-stack*)))
-    (subseq (caar *glx-stack*) 0 count)))
+  "Peek at values on the stack (within the current call frame)"
+  (let ((stack (caar *glx-stack*))
+        result)
+    (while (> count 0)
+      (unless stack
+        (signal 'glx-stack-error (list "Can't peek beyond frame length" (car *glx-stack*))))
+      (unless (eq 'catch (caar stack))
+        (push (car stack) result)
+        (decf count))
+      (setq stack (cdr stack)))
+    (nreverse result)))
+
+(defun glx-call-stub-dest-type (call-stub)
+  (car call-stub))
+
+(defun glx-call-stub-dest-addr (call-stub)
+  (cadr call-stub))
+
+(defun glx-call-stub-pc (call-stub)
+  (caddr call-stub))
 
 (defun glx-push-call-stub (dest-type dest-addr)
   "A call stub is a list of three elements, DEST-TYPE and DEST-ADDR 
@@ -70,6 +94,12 @@ stub to be created. "
       (incf ptr 2))
     (nreverse result)))
 
+(defun glx-get-all-local-offsets ()
+  "Just used for testing"
+  (let (offsets)
+    (dolist (local (cadar *glx-stack*) offsets)
+      (push (car local) offsets))))
+
 (defun glx-get-local-at-offset (offset)
   (let ((result (assoc offset (cadar *glx-stack*))))
     (if result (cdr result) (signal 'glx-stack-error (list "Unknown local" offset (car *glx-stack*))))))
@@ -90,11 +120,14 @@ be the start of a function. Returns the format of locals specifier."
   (let ((locals (glx-+1 function-ptr)))
     (glx-memory-get-range-as-vector locals (glx-look-for-format-of-locals-terminator locals))))
 
+(defun glx-push-new-call-frame (locals)
+  (glx-stack-push (list nil locals)))
+
 (defun glx-build-call-frame (function-ptr)
   "Build a Glulx VM call frame on the stack, for calling a function at the given 32 bit FUNCTION-PTR."
   (let* ((format-of-locals (glx-get-format-of-locals-from-function-def function-ptr))
          (locals (glx-get-empty-locals-list format-of-locals)))
-    (glx-stack-push (list nil locals))))
+    (glx-push-new-call-frame locals)))
 
 (defun glx-get-function-code-start (function-ptr)
   "Finds the first opcode in the given function"
@@ -154,7 +187,34 @@ which will be used when returning from this function."
 current call stub. Sets the PC back to the value stored in the call stub."
   (glx-stack-pop)
   (let ((call-stub (glx-stack-pop)))
-    (setq *glx-pc* (third call-stub))
+    (setq *glx-pc* (glx-call-stub-pc call-stub))
     call-stub))
+
+(defun glx-catch-push (token)
+  "Pushes a catch token onto the current call frame's stack. This
+token is not really on the stack, and is ignored/discarded by all 
+stack functions apart from UNWIND-STACK"
+  (glx-value-push (list 'catch token)))
+
+(defun glx-stack-unwind (token)
+  "Discards call frames and call stubs and call frame stack values until
+a matching catch token is found"
+
+  (let ((not-found t))
+    (while (and not-found *glx-stack*)
+
+      (while (and not-found (caar *glx-stack*))
+        (let ((val (pop (caar *glx-stack*))))
+          (when (and (eq 'catch (first val))
+                     (equal token (second val)))
+            (setq not-found nil))))
+
+      (when not-found
+        (glx-stack-pop) ; discard the call frame
+        (glx-stack-pop))) ; discard the call stub 
+    
+    (if not-found
+        (signal 'glx-stack-error (list "Catch token not found" token))
+      t)))
 
 (provide 'glx-stack)
