@@ -96,8 +96,8 @@ The value is truncated to the given number of bytes."
 
 (defun glx-memory-set-string (memptr string)
   (let ((ptr (glx-32->int memptr)))
-    (mapcar #'(lambda (char) (aset *glx-memory* ptr char)
-                (incf ptr))
+    (mapcar (lambda (char) (aset *glx-memory* ptr char)
+              (incf ptr))
             string)))
 
 (defun glx-log (message &rest values)

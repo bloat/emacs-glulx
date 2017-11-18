@@ -77,7 +77,7 @@
 (defun glx-*-byte (value b)
   (let ((result '())
         (carry 0))
-    (dolist (digit (reverse (mapcar #'(lambda (digit) (* digit b)) value)) result)
+    (dolist (digit (reverse (mapcar (lambda (digit) (* digit b)) value)) result)
       (let ((new-digit (+ digit carry)))
         (setq carry 0)
         (if (< new-digit 256)

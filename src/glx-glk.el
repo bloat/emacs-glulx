@@ -34,7 +34,7 @@
                     (list 1 #'glx-store-glk-result)
                     (list 2 #'glx-store-glk-result)) *glx-glk-functions*)
 (puthash #x2a (list #'glk-window-clear #'glx-32->glk-opq) *glx-glk-functions*)
-(puthash #x2b (list #'(lambda (a b c) nil) #'identity #'identity #'identity) *glx-glk-functions*)
+(puthash #x2b (list (lambda (a b c) nil) #'identity #'identity #'identity) *glx-glk-functions*)
 (puthash #x2f (list #'glk-set-window #'glx-32->glk-opq) *glx-glk-functions*)
 (puthash #x40 (list #'glk-stream-iterate #'glx-32->glk-opq (list 1 #'glx-store-glk-result)) *glx-glk-functions*)
 (puthash #x43 (list #'glk-stream-open-memory #'identity #'glx-32->int #'glx-32->int #'glx-32->int 'gen-id) *glx-glk-functions*)
@@ -44,7 +44,7 @@
 (puthash #x64 (list #'glk-fileref-iterate #'glx-32->glk-opq (list 1 #'glx-store-glk-result)) *glx-glk-functions*)
 (puthash #x86 (list #'glk-set-style #'glx-32->glk-style) *glx-glk-functions*)
 (puthash #xa0 (list #'glk-char-to-lower #'glx-32->int) *glx-glk-functions*)
-(puthash #xb0 (list #'(lambda (a b c d) nil) #'identity #'identity #'identity #'identity) *glx-glk-functions*)
+(puthash #xb0 (list (lambda (a b c d) nil) #'identity #'identity #'identity #'identity) *glx-glk-functions*)
 (puthash #xc0 (list #'glx-glk-select #'identity) *glx-glk-functions*)
 (puthash #xd0 (list #'glk-request-line-event
                     #'glx-32->glk-opq #'identity
@@ -62,7 +62,7 @@ be ARG-COUNT args on the stack."
         stores)
     (glx-log "looking for glk function %x" selector)
     (when (null glk-fun) (signal 'glx-glk-error (list "Can't find glk function" selector)))
-    (when (not (= (length (remove-if #'(lambda (x) (eq x 'gen-id)) (cdr glk-fun))) arg-count))
+    (when (not (= (length (remove-if (lambda (x) (eq x 'gen-id)) (cdr glk-fun))) arg-count))
       (signal 'glx-glk-error (list "Glk arity mismatch: function expects" (length (cdr glk-fun)) "received" arg-count)))
     (glx-log "found glk function %s - marshalling %s " glk-fun (cdr glk-fun))
     (dolist (marshall (cdr glk-fun))

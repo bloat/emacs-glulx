@@ -43,7 +43,7 @@
          (modes ,@args store)
          (funcall (first store) (second store) ,calc ,(if bytes bytes 4))))))
 
-(glx-defopcode 'nop 0 nil #'(lambda (modes) nil))
+(glx-defopcode 'nop 0 nil (lambda (modes) nil))
 
 (glx-def-store add #x10 (l1 l2) (glx-+ l1 l2))
 (glx-def-store sub #x11 (l1 l2) (glx-- l1 l2))
@@ -246,9 +246,9 @@
 
 (glx-defopcode 'stkcopy #x54 '(load) #'glx-instruction-stkcopy)
 
-(glx-defopcode 'streamchar #x70 '(load) #'(lambda (modes l1) (if *glx-glk-selected* (glk-put-char (glx-32->char l1)))))
-(glx-defopcode 'streamnum #x71 '(load) #'(lambda (modes l1) (if *glx-glk-selected* (glk-put-string (glx-32->dec-string l1)))))
-(glx-defopcode 'streamstr #x72 '(load) #'(lambda (modes l1) (if *glx-glk-selected* (glk-put-string (glx-get-string l1)))))
+(glx-defopcode 'streamchar #x70 '(load) (lambda (modes l1) (if *glx-glk-selected* (glk-put-char (glx-32->char l1)))))
+(glx-defopcode 'streamnum #x71 '(load) (lambda (modes l1) (if *glx-glk-selected* (glk-put-string (glx-32->dec-string l1)))))
+(glx-defopcode 'streamstr #x72 '(load) (lambda (modes l1) (if *glx-glk-selected* (glk-put-string (glx-get-string l1)))))
 
 (glx-def-store gestalt #x100 (l1 l2) (cond ((equal glx-0 l1) (glx-32 0 1 3))
                                            ((equal glx-1 l1) glx-0)
@@ -268,7 +268,7 @@
 
 (glx-defopcode 'jumpabs #x104 '(load) #'glx-instruction-jumpabs)
 (glx-def-store random #x110 (l1) (glx-32-rand l1))
-(glx-defopcode 'quit #x120 '() #'(lambda (modes) 'glx-quit))
+(glx-defopcode 'quit #x120 '() (lambda (modes) 'glx-quit))
 (glx-def-store saveundo #x125 () (progn (glx-save-undo) glx-0))
 (glx-def-store restoreundo #x126 () (glx-restore-undo))
 

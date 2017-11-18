@@ -128,14 +128,14 @@ Also returns the addressing modes themselves. "
 (defun glx-format-exec-log (opcode args)
   (apply #'concat
          (format "%15s " opcode)
-         (mapcar #'(lambda (arg) (format "%8s " (if (symbolp (car arg))
-                                                    (format "%8x-%8s"
-                                                            (cond ((eql (car arg) #'glx-store-throw) 0)
-                                                                  ((eql (car arg) #'glx-store-mem) 1)
-                                                                  ((eql (car arg) #'glx-store-local) 2)
-                                                                  (t 3))
-                                                            (glx-32->hex-string (cadr arg)))
-                                                  (glx-32->hex-string arg))))
+         (mapcar (lambda (arg) (format "%8s " (if (symbolp (car arg))
+                                                  (format "%8x-%8s"
+                                                          (cond ((eql (car arg) #'glx-store-throw) 0)
+                                                                ((eql (car arg) #'glx-store-mem) 1)
+                                                                ((eql (car arg) #'glx-store-local) 2)
+                                                                (t 3))
+                                                          (glx-32->hex-string (cadr arg)))
+                                                (glx-32->hex-string arg))))
                  args)))
 
 (defun glx-32->hex-string (value)
