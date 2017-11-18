@@ -725,3 +725,38 @@
 
   (with-glx-memory (0 0 0 0 0 0 0 0) (0 0 0 0 0 0 18 18)
     (glx-instruction-sexs nil (glx-32 18 18 2 3) (list #'glx-store-mem glx-4))))
+
+(ert-deftest catch-instruction ()
+  "catch instruction"
+  :tags '(instructions)
+
+  ;; Store token to memory
+  (with-glx-memory (0 0 0 0 0 0 0 0) (0 0 0 0 0 0 0 1)
+    (with-glx-stack () (1 4 3 0)
+      (let ((*glx-pc* glx-3)
+            (*glx-catch-token* glx-1))
+
+        (glx-instruction-catch nil (list #'glx-store-mem glx-4) glx-5)
+        (should (equal *glx-catch-token* glx-2))
+        (should (equal *glx-pc* (glx-32 6))) ; pc + offset - 2
+        ;; The top element of the call frame's stack. Can't see it by regular popping.
+        (should (equal (caaar *glx-stack*) `(catch ,glx-1)))))
+
+    ;; Store token onto stack
+    (with-glx-stack () (3 0 3 0 17)
+      (let ((*glx-pc* glx-3)
+            (*glx-catch-token* (glx-32 17)))
+        
+        (glx-instruction-catch nil (list #'glx-store-stack nil) glx-5)
+        ;; The second element of the call frame's stack. Can't see it by regular popping.
+        (should (equal (cadaar *glx-stack*) `(catch ,(glx-32 17))))))))
+
+(ert-deftest throw-instruction ()
+  "throw instruction"
+  :tags '(instructions)
+
+  (with-glx-memory (0 0 0 0 0 0 0 0) (0 0 0 0 0 0 0 5) ; The thrown value is stored according to the call stub on the stack
+    (with-glx-stack (1 4 3 0) () ; Stack with a call stub as if created by catch
+      (glx-value-push `(catch ,glx-1)) ; The catch token
+      (glx-value-push glx-3) ; some other value to be discarded as we unwind.
+      (glx-instruction-throw nil glx-5 glx-1))))

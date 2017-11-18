@@ -20,6 +20,7 @@
 (defvar *glx-undo* nil "Undo information for the Glulx VM")
 (defvar *glx-glk-id-gen* 0 "Generates glk ids for new glk opaque objects")
 (defvar *glx-store-event-memptr* nil "Where to store the glk event on re-entry")
+(defvar *glx-catch-token* glx-0 "An increasing number for catch tokens")
 
 (defvar *glx-log-buffer* nil "A buffer for Glulx VM logging output")
 

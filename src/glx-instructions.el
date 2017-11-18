@@ -111,16 +111,43 @@
 
 (glx-defopcode 'call #x30 '(load load store) #'glx-instruction-call)
 
+(defun glx-dest-type->store-fun (dest-type)
+  (cond ((= 3 dest-type) #'glx-store-stack)
+        ((= 2 dest-type) #'glx-store-local)
+        ((= 1 dest-type) #'glx-store-mem)
+        ((= 0 dest-type) #'glx-store-throw)))
+
 (defun glx-instruction-return (modes result)
   (let* ((call-stub (glx-return-from-function))
-         (dest-type (car call-stub))
-         (store-fun (cond ((= 3 dest-type) #'glx-store-stack)
-                          ((= 2 dest-type) #'glx-store-local)
-                          ((= 1 dest-type) #'glx-store-mem)
-                          ((= 0 dest-type) #'glx-store-throw))))
+         (store-fun (glx-dest-type->store-fun (car call-stub))))
     (funcall store-fun (cadr call-stub) result)))
 
 (glx-defopcode 'return #x31 '(load) #'glx-instruction-return)
+
+(defun glx-instruction-catch (modes store dest)
+  (let ((token *glx-catch-token*))
+    (setq *glx-catch-token* (glx-+1 token))
+    (multiple-value-bind (dest-type dest-addr)
+        (glx-get-destinations store)
+      (glx-value-push (glx-32 dest-type))
+      (glx-value-push dest-addr))
+    (glx-value-push *glx-pc*)
+    (glx-value-push glx-0)  ; frame-ptr (we don't have one)
+    (glx-value-push (list 'catch token))
+    (funcall (first store) (second store) token)
+    (glx-branch-or-return dest)))
+
+(glx-defopcode 'catch #x32 '(store load) #'glx-instruction-catch)
+
+(defun glx-instruction-throw (modes value token)
+  (glx-stack-unwind token)
+  (glx-value-pop) ;; discard frame pointer
+  (setq *glx-pc* (glx-value-pop))
+  (let ((dest-addr (glx-value-pop))
+        (store-fun (glx-dest-type->store-fun (car (last (glx-32-get-bytes-as-list-big-endian (glx-value-pop)))))))
+    (funcall store-fun dest-addr value)))
+
+(glx-defopcode 'throw #x33 '(load load) #'glx-instruction-throw)
 
 (defun glx-instruction-tailcall (modes fun-ptr arg-count)
   (let (args)

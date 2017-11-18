@@ -81,6 +81,7 @@
     (setq *glx-glk-id-gen* 0)
     (setq *glx-pc* nil)
     (setq *glx-log-buffer* nil)
+    (setq *glx-catch-token* glx-0)
     (message "glulx finished")))
 
 (provide 'glx-load)
