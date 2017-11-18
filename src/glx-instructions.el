@@ -274,6 +274,9 @@
 
 (glx-def-store glk #x130 (l1 l2) (glx-glk-call (glx-32->int l1) (glx-32->int l2)))
 
+(glx-def-store getstringtbl #x140 () *glx-string-table*)
+(glx-defopcode 'setstringtbl #x141 '(load) (lambda (modes table) (setq *glx-string-table* table)))
+
 (defun glx-instruction-setiosys (modes system rock)
   (setq *glx-glk-selected* (equal system glx-2))
   (if (not (or (equal system glx-2) (equal system glx-0)))
