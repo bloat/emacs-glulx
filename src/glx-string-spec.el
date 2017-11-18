@@ -139,6 +139,27 @@
     (should (equal (glx-get-string (glx-32 55)) "P"))
     (should (equal (glx-get-string (glx-32 53)) "ABCPABC"))))
 
+(ert-deftest unicode-string-and-single-character-leaf-nodes ()
+  "Unicode string and single character leaf nodes"
+  :tags '(string)
+  (let ((*glx-memory*
+         [nil
+          0 0 0 63                     ;4
+          0 0 0 7                      ;8
+          0 0 0 13                     ;12
+          0 0 0 0 22 0 0 0 31          ;21
+          0 0 0 0 40 0 0 0 53          ;30
+          0 0 0 0 54 0 0 0 59          ;39
+          5 0 0 0 ?é 0 0 34 30 0 0 0 0 ;49 é∞
+          1                            ;53
+          4 0 0 1 225                  ;58 ǡ
+          4 0 0 34 149                 ;63 ⊕
+          #xe1 #b00100000
+          #xe1 #b10010011])
+        (*glx-string-table* glx-1))
+    (should (equal (glx-get-string (glx-32 64)) "é∞é∞"))
+    (should (equal (glx-get-string (glx-32 66)) "⊕é∞ǡ"))))
+
 (ert-deftest unknown-string-type ()
   "Unknown string type"
   :tags '(string)

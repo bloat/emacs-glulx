@@ -58,6 +58,17 @@ at the Glulx VM memory location given by the 32 bit MEMPTR."
       (setf (cdr bitstream) 0))
     bit))
 
+(defun glx-memory-get-unicode-string (memptr)
+  "Loads a string consisting of unicode characters (four bytes each) from the 
+Glulx VM memory location given by the 32 bit MEMPTR. The string is terminated
+by a 32 bit 0."
+  (let (result 
+        char)
+    (while (not (glx-0-p (setq char (glx-memory-get-32 memptr))))
+      (push (glx-32->unicode-char char) result)
+      (setq memptr (glx-+ glx-4 memptr)))
+    (concat (nreverse result))))
+
 (defun glx-uncompress-string (bitstream)
   (let ((result "")
         (node (glx-st-get-root-node-ptr)))
@@ -67,6 +78,10 @@ at the Glulx VM memory location given by the 32 bit MEMPTR."
               ((= 2 node-type) (setq result (concat result (make-string 1 (glx-memory-get-byte-int (glx-+1 node)))))
                (setq node (glx-st-get-root-node-ptr)))
               ((= 3 node-type) (setq result (concat result (glx-memory-get-range (glx-+1 node) (glx-look-for-string-terminator node))))
+               (setq node (glx-st-get-root-node-ptr)))
+              ((= 4 node-type) (setq result (concat result (make-string 1 (glx-32->unicode-char (glx-memory-get-32 (glx-+1 node))))))
+               (setq node (glx-st-get-root-node-ptr)))
+              ((= 5 node-type) (setq result (concat result (glx-memory-get-unicode-string (glx-+1 node))))
                (setq node (glx-st-get-root-node-ptr)))
               ((= 8 node-type) (setq result (concat result (glx-get-string (glx-memory-get-32 (glx-+1 node)))))
                (setq node (glx-st-get-root-node-ptr)))

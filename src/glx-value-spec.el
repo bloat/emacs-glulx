@@ -231,6 +231,11 @@
   (should (equal (glx-32->char (glx-32 97)) ?a))
   (should (equal (glx-32->char (glx-32 97 5 6)) ?a)))
 
+(ert-deftest test-conversion-to-unicode-char ()
+  "Test conversion to unicode char"
+  :tags '(32-bit)
+  (should (equal (glx-32->unicode-char (glx-32 #x40 #x26)) ?♀)))
+
 (ert-deftest test-truncate-hi ()
   "Test truncate - keep high bits"
   :tags '(32-bit)
