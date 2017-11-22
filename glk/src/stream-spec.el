@@ -167,7 +167,7 @@
     :tags '(glk stream)
     (clean-up-and-check
      (glk-stream-open-memory 'buffer 20 'write 'rock 'a-stream)
-     (should (equal (glk-stream-close 'a-stream) '(nil (0 0 buffer ""))))))
+     (should (equal (glk-stream-close 'a-stream) '(nil (0 0 nil buffer ""))))))
 
   (ert-deftest a-stream-returns-its-correct-write-count-and-its-contents ()
     "a stream returns its correct write-count and its contents"
@@ -175,7 +175,7 @@
     (clean-up-and-check
      (glk-stream-open-memory 'buffer 20 'write 'rock 'a-stream)
      (glk-put-string-stream 'a-stream "hello")
-     (should (equal (glk-stream-close 'a-stream) '(nil (0 5 buffer "hello"))))))
+     (should (equal (glk-stream-close 'a-stream) '(nil (0 5 nil buffer "hello"))))))
 
   ;; TODO this uses the current stream for the face, when it should use the passed in stream
   (ert-deftest setting-a-face-on-a-stream ()

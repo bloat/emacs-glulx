@@ -30,12 +30,29 @@ string terminator (a zero byte)."
   "Is the object at MEMPTR a compressed string?"
   (= #xe1 (glx-memory-get-byte-int memptr)))
 
+(defun glx-uncompressed-unicode-string-p (memptr)
+  "Is the object at MEMPTR and uncompressed unicode string?"
+  (= #xe2 (glx-memory-get-byte-int memptr)))
+
+(defun glx-memory-get-unicode-string (memptr)
+  "Loads a string consisting of unicode characters (four bytes each) from the 
+Glulx VM memory location given by the 32 bit MEMPTR. The string is terminated
+by a 32 bit 0."
+  (let (result 
+        char)
+    (while (not (glx-0-p (setq char (glx-memory-get-32 memptr))))
+      (push (glx-32->unicode-char char) result)
+      (setq memptr (glx-+ glx-4 memptr)))
+    (concat (nreverse result))))
+
 (defun glx-get-string (memptr)
   "Return the string encoded at the Glulx VM memory location given by the 32 bit MEMPTR."
   (cond ((glx-uncompressed-string-p memptr)
          (concat "" (glx-memory-get-range (glx-+1 memptr) (glx-look-for-string-terminator memptr))))
         ((glx-compressed-string-p memptr)
          (glx-uncompress-string (glx-get-bitstream (glx-+1 memptr))))
+        ((glx-uncompressed-unicode-string-p memptr)
+         (glx-memory-get-unicode-string (glx-+ glx-4 memptr)))
         (t (signal 'glx-string-error (list "Unknown string type" memptr (glx-memory-get-byte-int memptr))))))
 
 (defun glx-st-get-root-node-ptr ()
@@ -57,17 +74,6 @@ at the Glulx VM memory location given by the 32 bit MEMPTR."
       (setf (car bitstream) (glx-+1 (car bitstream)))
       (setf (cdr bitstream) 0))
     bit))
-
-(defun glx-memory-get-unicode-string (memptr)
-  "Loads a string consisting of unicode characters (four bytes each) from the 
-Glulx VM memory location given by the 32 bit MEMPTR. The string is terminated
-by a 32 bit 0."
-  (let (result 
-        char)
-    (while (not (glx-0-p (setq char (glx-memory-get-32 memptr))))
-      (push (glx-32->unicode-char char) result)
-      (setq memptr (glx-+ glx-4 memptr)))
-    (concat (nreverse result))))
 
 (defun glx-uncompress-string (bitstream)
   (let ((result "")

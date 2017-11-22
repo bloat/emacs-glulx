@@ -49,6 +49,7 @@
 (puthash #xd0 (list #'glk-request-line-event
                     #'glx-32->glk-opq #'identity
                     #'glx-32->int #'glx-32->int) *glx-glk-functions*)
+(puthash #x139 (list #'glk-stream-open-memory-uni #'identity #'glx-32->int #'glx-32->int #'glx-32->int 'gen-id) *glx-glk-functions*)
 
 (defun glx-get-next-glk-id ()
   (incf *glx-glk-id-gen*)
@@ -160,11 +161,17 @@ If the memory address is 0 then all results are discarded."
                                  (glx-32 (fourth event))))
   (glx-memory-set-string (fifth event) (sixth event)))
 
+(defun glx-memory-set-unicode-string (memptr string)
+  (mapcar (lambda (c) (glx-memory-set memptr (glx-32 c) 4) (setq memptr (glx-+ glx-4 memptr))) string))
+
 (defun glx-glk-store-closed-memory-stream (memptr stream)
   (glx-log "storing stream to location: %S - %S" memptr stream)
   (glx-store-glk-structure memptr
                            (list (glx-32 (first stream))
                                  (glx-32 (second stream))))
-  (glx-memory-set-string (third stream) (fourth stream)))
+  (if (third stream)
+      (glx-memory-set-unicode-string (fourth stream) (fifth stream))
+    (glx-memory-set-string (fourth stream) (fifth stream))))
 
 (provide 'glx-glk)
+

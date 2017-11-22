@@ -135,6 +135,6 @@
   :tags '(glk)
   (let ((*glx-memory* (make-vector 5 0))
         (*glx-stack* (list (list (list)))))
-    (glx-glk-store-closed-memory-stream (glx-32 -1) '(0 5 (0 0 0 0) "hello"))
+    (glx-glk-store-closed-memory-stream (glx-32 -1) '(0 5 nil (0 0 0 0) "hello"))
     (should (equal *glx-memory* [104 101 108 108 111]))
     (should (equal *glx-stack* (list (list (list glx-5 glx-0)))))))

@@ -15,7 +15,7 @@
   "The current stream for reading and writing.
 Used by routines which do not specify a stream")
 
-(defopaque stream buffer type read-count write-count storage face)
+(defopaque stream buffer type read-count write-count storage face unicode)
 
 (defun glki-process-string-for-insertion (stream s)
   (if (eq (glki-opq-stream-get-type stream) 'glki-memory-stream)
@@ -76,14 +76,21 @@ Used by routines which do not specify a stream")
 (defun glk-stream-set-current (str)
   (setq glk-current-stream str))
 
-(defun glk-stream-open-memory (buf buflen fmode rock stream-id)
+(defun glki-stream-open-memory (buf buflen fmode rock stream-id unicode)
   (let ((stream (glki-opq-stream-create stream-id)))
     (glki-opq-stream-set-buffer stream (generate-new-buffer "*glk*"))
     (glki-opq-stream-set-type stream 'glki-memory-stream)
     (glki-opq-stream-set-read-count stream 0)
     (glki-opq-stream-set-write-count stream 0)
     (glki-opq-stream-set-storage stream buf)
+    (glki-opq-stream-set-unicode stream unicode)
     stream))
+
+(defun glk-stream-open-memory (buf buflen fmode rock stream-id)
+  (glki-stream-open-memory buf buflen fmode rock stream-id nil))
+
+(defun glk-stream-open-memory-uni (buf buflen fmode rock stream-id)
+  (glki-stream-open-memory buf buflen fmode rock stream-id t))
 
 (defun glki-stream-dispose (stream)
   (if (glki-opq-stream-get-buffer stream)
@@ -99,6 +106,7 @@ Used by routines which do not specify a stream")
     (signal 'glk-error (list "Can't close a window stream" stream)))
   (let ((result (list nil (list (glki-opq-stream-get-read-count stream)
                                 (glki-opq-stream-get-write-count stream)
+                                (glki-opq-stream-get-unicode stream)
                                 (glki-opq-stream-get-storage stream)
                                 (save-current-buffer
                                   (set-buffer (glki-opq-stream-get-buffer stream))

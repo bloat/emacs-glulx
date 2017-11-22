@@ -249,6 +249,7 @@
 (glx-defopcode 'streamchar #x70 '(load) (lambda (modes l1) (if *glx-glk-selected* (glk-put-char (glx-32->char l1)))))
 (glx-defopcode 'streamnum #x71 '(load) (lambda (modes l1) (if *glx-glk-selected* (glk-put-string (glx-32->dec-string l1)))))
 (glx-defopcode 'streamstr #x72 '(load) (lambda (modes l1) (if *glx-glk-selected* (glk-put-string (glx-get-string l1)))))
+(glx-defopcode 'streamunichar #x73 '(load) (lambda (modes l1) (if *glx-glk-selected* (glk-put-char (glx-32->unicode-char l1)))))
 
 (glx-def-store gestalt #x100 (l1 l2) (cond ((equal glx-0 l1) (glx-32 0 1 3))
                                            ((equal glx-1 l1) glx-0)
