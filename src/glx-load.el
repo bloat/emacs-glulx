@@ -65,8 +65,7 @@
       (progn
         (glki-init (make-frame))
         (glx-process-header)
-        (glx-call-function (glx-memory-get-32 (glx-32 24)) 'game-over 0 '())
-        (while (glx-execute-next-instruction)))
+        (glx-call-function-and-return-to-emacs (glx-memory-get-32 (glx-32 24))))
     (glx-cleanup)))
 
 (defun glx-cleanup ()

@@ -9,17 +9,29 @@
 ;; This file is licensed under the terms of the GNU General Public
 ;; License as distributed with Emacs (press C-h C-c to view it).
 
+(defmacro check-string (expected-result expected-call-count memptr)
+  (declare (indent 2))
+  (let ((result (gensym))
+        (call-count (gensym)))
+    `(let ((,result "")
+           (,call-count 0))
+       (cl-flet ((char-fun (c) (incf ,call-count) (setq ,result (concat ,result (list c)))))
+         (glx-get-string ,memptr #'char-fun))
+       (should (equal ,result ,expected-result))
+       (should (= ,call-count ,expected-call-count)))))
+
 (ert-deftest decode-a-zero-byte-uncompressed-string ()
   "Decode a zero byte uncompressed string"
   :tags '(string)
+
   (let ((*glx-memory* [#xe0 0]))
-    (should (equal (glx-get-string glx-0) ""))))
+    (check-string "" 0 glx-0)))
 
 (ert-deftest decode-a-two-byte-uncompressed-string ()
   "Decode a two byte uncompressed string"
   :tags '(string)
   (let ((*glx-memory* [#xe0 65 66 0]))
-    (should (equal (glx-get-string glx-0) "AB"))))
+    (check-string "AB" 2 glx-0)))
 
 (ert-deftest get-the-root-node-for-a-string-table ()
   "Get the root node for a string table"
@@ -28,8 +40,8 @@
         (*glx-string-table* glx-1))
     (should (equal (glx-st-get-root-node-ptr) (glx-32 14)))))
 
-(ert-deftest get-a-bitstream-from-a-memory-location2 ()
-  "Get a bitstream from a memory location2"
+(ert-deftest get-a-bitstream-from-a-memory-location ()
+  "Get a bitstream from a memory location"
   :tags '(string)
   (let ((*glx-memory* [#b10101110 #b10101101]))
     (let ((glx-bitstream (glx-get-bitstream glx-0)))
@@ -49,31 +61,46 @@
   :tags '(string)
   (let ((*glx-memory* [nil 0 0 0 13 0 0 0 1 0 0 0 13 1 #xe1])
         (*glx-string-table* glx-1))
-    (should (equal (glx-get-string (glx-32 14)) ""))))
+    (check-string "" 0 (glx-32 14))))
 
 (ert-deftest branch-on-branch-node ()
   "Branch on branch node"
   :tags '(string)
   (let ((*glx-memory* [nil 0 0 0 23 0 0 0 3 0 0 0 13 0 0 0 0 22 0 0 0 23 1 1 #xe1 0 #xe1 1])
         (*glx-string-table* glx-1))
-    (should (equal (glx-get-string (glx-32 24)) ""))
-    (should (equal (glx-get-string '(0 0 0 26)) ""))))
+    (check-string "" 0 (glx-32 24))
+    (check-string "" 0 (glx-32 26))))
 
 (ert-deftest single-character-leaf-node ()
   "Single character leaf node"
   :tags '(string)
-  (let ((*glx-memory* [nil 0 0 0 24 0 0 0 3 0 0 0 13 0 0 0 0 22 0 0 0 24 2 ?A 1 #xe1 2 #xe1 1])
+  (let ((*glx-memory* [nil 0 0 0 24
+                           0 0 0 3
+                           0 0 0 13
+                           0 0 0 0 22 0 0 0 24
+                           2 ?A ;22
+                           1    ;24
+                           #xe1 2
+                           #xe1 1])
         (*glx-string-table* glx-1))
-    (should (equal (glx-get-string (glx-32 25)) "A"))
-    (should (equal (glx-get-string (glx-32 27)) ""))))
+
+    (check-string "A" 1 (glx-32 25))
+    (check-string "" 0 (glx-32 27))))
 
 (ert-deftest string-leaf-node ()
   "String leaf node"
   :tags '(string)
-  (let ((*glx-memory* [nil 0 0 0 24 0 0 0 3 0 0 0 13 0 0 0 0 22 0 0 0 27 3 ?A ?B ?C 0 1 #xe1 2 #xe1 1])
+  (let ((*glx-memory* [nil 0 0 0 24
+                           0 0 0 3
+                           0 0 0 13
+                           0 0 0 0 22 0 0 0 27
+                           3 ?A ?B ?C 0 ;22
+                           1            ;27
+                           #xe1 2
+                           #xe1 1])
         (*glx-string-table* glx-1))
-    (should (equal (glx-get-string (glx-32 28)) "ABC"))
-    (should (equal (glx-get-string (glx-32 30)) ""))))
+    (check-string "ABC" 3 (glx-32 28))
+    (check-string "" 0 (glx-32 30))))
 
 (ert-deftest string-and-single-character-leaf-nodes ()
   "String and single character leaf nodes"
@@ -93,8 +120,8 @@
           #xe1 #b00100000
           #xe1 #b10010011])
         (*glx-string-table* glx-1))
-    (should (equal (glx-get-string (glx-32 50)) "ABCABC"))
-    (should (equal (glx-get-string (glx-32 52)) "PABCJ"))))
+    (check-string "ABCABC" 6 (glx-32 50))
+    (check-string "PABCJ" 5 (glx-32 52))))
 
 (ert-deftest test-indirect-string-reference ()
   "Test indirect string reference"
@@ -114,8 +141,8 @@
           #xe1 #b10000100
           #xe1 #b00001011])
         (*glx-string-table* glx-1))
-    (should (equal (glx-get-string (glx-32 55)) "P"))
-    (should (equal (glx-get-string (glx-32 53)) "ABCPABC"))))
+    (check-string "P" 1 (glx-32 55))
+    (check-string "ABCPABC" 7 (glx-32 53))))
 
 (ert-deftest test-double-indirect-string-reference ()
   "Test double indirect string reference"
@@ -136,8 +163,8 @@
           #xe1 #b00001011
           0 0 0 55])
         (*glx-string-table* glx-1))
-    (should (equal (glx-get-string (glx-32 55)) "P"))
-    (should (equal (glx-get-string (glx-32 53)) "ABCPABC"))))
+    (check-string "P" 1 (glx-32 55))
+    (check-string "ABCPABC" 7 (glx-32 53))))
 
 (ert-deftest unicode-string-and-single-character-leaf-nodes ()
   "Unicode string and single character leaf nodes"
@@ -157,18 +184,18 @@
           #xe1 #b00100000
           #xe1 #b10010011])
         (*glx-string-table* glx-1))
-    (should (equal (glx-get-string (glx-32 64)) "é∞é∞"))
-    (should (equal (glx-get-string (glx-32 66)) "⊕é∞ǡ"))))
+    (check-string "é∞é∞" 4 (glx-32 64))
+    (check-string "⊕é∞ǡ" 4 (glx-32 66))))
 
 (ert-deftest unknown-string-type ()
   "Unknown string type"
   :tags '(string)
   (let ((*glx-memory* [0]))
-    (should-error (glx-get-string glx-0) :type 'glx-string-error)))
+    (should-error (glx-get-string glx-0 (lambda (c))) :type 'glx-string-error)))
 
 (ert-deftest use-terminator-node-for-compressed-string ()
   "Use terminator node for compressed string"
   :tags '(string)
   (let ((*glx-memory* [nil 0 0 0 13 0 0 0 1 0 0 0 13 45 #xe1])
         (*glx-string-table* glx-1))
-    (should-error (glx-get-string (glx-32 14)) :type 'glx-string-error)))
+    (should-error (glx-get-string (glx-32 14) (lambda (c))) :type 'glx-string-error)))

@@ -170,4 +170,11 @@ Also returns the addressing modes themselves. "
             (glx-execute-uncompiled-instruction))))
     (glx-execute-uncompiled-instruction)))
 
+(defun glx-call-function-and-return-to-emacs (memptr)
+  "Calls the function at MEMPTR and keeps running the Glulx VM
+calling more functions as required until this top-level function
+returns."
+  (glx-call-function (glx-memory-get-32 (glx-32 24)) 'game-over 0 '())
+  (while (glx-execute-next-instruction)))
+
 (provide 'glx-exec)

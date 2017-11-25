@@ -193,7 +193,7 @@ current call stub. Sets the PC back to the value stored in the call stub."
 (defun glx-catch-push (token)
   "Pushes a catch token onto the current call frame's stack. This
 token is not really on the stack, and is ignored/discarded by all 
-stack functions apart from UNWIND-STACK"
+stack functions apart from GLX-STACK-UNWIND"
   (glx-value-push (list 'catch token)))
 
 (defun glx-stack-unwind (token)
