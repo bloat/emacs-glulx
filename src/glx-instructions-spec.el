@@ -454,9 +454,11 @@
 (ert-deftest setiosys ()
   "setiosys"
   :tags '(instructions)
-  (let ((*glx-glk-selected* nil))
-    (glx-instruction-setiosys nil glx-2 glx-0)
-    (should *glx-glk-selected*)
+  (let ((*glx-iosys* nil))
+    (glx-instruction-setiosys nil glx-2 (glx-32 14))
+    (should (glx-iosys-charfun))
+    (should (equal (glx-32 14) (glx-iosys-rock)))
+    
     (should-error (glx-instruction-setiosys nil glx-3 glx-0) :type 'glx-glk-error)))
 
 (ert-deftest jump-instruction ()

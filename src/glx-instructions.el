@@ -255,10 +255,10 @@
 
 (glx-defopcode 'stkcopy #x54 '(load) #'glx-instruction-stkcopy)
 
-(glx-defopcode 'streamchar #x70 '(load) (lambda (modes l1) (if *glx-glk-selected* (glk-put-char (glx-32->char l1)))))
-(glx-defopcode 'streamnum #x71 '(load) (lambda (modes l1) (if *glx-glk-selected* (mapcar #'glk-put-char (glx-32->dec-string l1)))))
-(glx-defopcode 'streamstr #x72 '(load) (lambda (modes l1) (if *glx-glk-selected* (glx-get-string l1 #'glk-put-char))))
-(glx-defopcode 'streamunichar #x73 '(load) (lambda (modes l1) (if *glx-glk-selected* (glk-put-char (glx-32->unicode-char l1)))))
+(glx-defopcode 'streamchar #x70 '(load) (lambda (modes l1) (funcall (glx-iosys-charfun) (glx-32->char l1))))
+(glx-defopcode 'streamnum #x71 '(load) (lambda (modes l1) (mapcar (lambda (c) (funcall (glx-iosys-charfun) c)) (glx-32->dec-string l1))))
+(glx-defopcode 'streamstr #x72 '(load) (lambda (modes l1) (glx-get-string l1)))
+(glx-defopcode 'streamunichar #x73 '(load) (lambda (modes l1) (funcall (glx-iosys-charfun) (glx-32->unicode-char l1))))
 
 (glx-def-store gestalt #x100 (l1 l2) (cond ((equal glx-0 l1) (glx-32 0 1 3))
                                            ((equal glx-1 l1) glx-0)
@@ -287,10 +287,18 @@
 (glx-def-store getstringtbl #x140 () *glx-string-table*)
 (glx-defopcode 'setstringtbl #x141 '(load) (lambda (modes table) (setq *glx-string-table* table)))
 
+(glx-defopcode 'getiosys #x148 '(store store) (lambda (modes s1 s2)
+                                                (funcall (first s1) (second s1) (glx-iosys-id))
+                                                (funcall (first s2) (second s2) (glx-iosys-rock))))
+
 (defun glx-instruction-setiosys (modes system rock)
-  (setq *glx-glk-selected* (equal system glx-2))
-  (if (not (or (equal system glx-2) (equal system glx-0)))
-      (signal 'glx-glk-error (list "Unknown io system" system))))
+  (cond ((equal system glx-0) (setq *glx-iosys* (list (lambda (c)) rock glx-0)))
+        ((equal system glx-1) (setq *glx-iosys* (list (lexical-let ((filter-fun rock))
+                                                        (lambda (c) (glx-call-function-and-return-to-emacs filter-fun (list (glx-32 c)))))
+                                                      rock
+                                                      glx-1)))
+        ((equal system glx-2) (setq *glx-iosys* (list #'glk-put-char rock glx-2)))
+        (t (signal 'glx-glk-error (list "Unknown io system" system)))))
 
 (glx-defopcode 'setiosys #x149 '(load load) #'glx-instruction-setiosys)
 

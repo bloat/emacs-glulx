@@ -42,6 +42,7 @@
 (puthash #x47 (list #'glk-stream-set-current #'glx-32->glk-opq) *glx-glk-functions*)
 (puthash #x48 (list #'glk-stream-get-current) *glx-glk-functions*)
 (puthash #x64 (list #'glk-fileref-iterate #'glx-32->glk-opq (list 1 #'glx-store-glk-result)) *glx-glk-functions*)
+(puthash #x80 (list #'glk-put-char #'glx-32->int) *glx-glk-functions*)
 (puthash #x86 (list #'glk-set-style #'glx-32->glk-style) *glx-glk-functions*)
 (puthash #xa0 (list #'glk-char-to-lower #'glx-32->int) *glx-glk-functions*)
 (puthash #xb0 (list (lambda (a b c d) nil) #'identity #'identity #'identity #'identity) *glx-glk-functions*)
@@ -49,6 +50,7 @@
 (puthash #xd0 (list #'glk-request-line-event
                     #'glx-32->glk-opq #'identity
                     #'glx-32->int #'glx-32->int) *glx-glk-functions*)
+(puthash #x128 (list #'glk-put-char #'glx-32->int) *glx-glk-functions*)
 (puthash #x139 (list #'glk-stream-open-memory-uni #'identity #'glx-32->int #'glx-32->int #'glx-32->int 'gen-id) *glx-glk-functions*)
 
 (defun glx-get-next-glk-id ()

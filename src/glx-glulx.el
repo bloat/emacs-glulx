@@ -16,7 +16,7 @@
 (defvar *glx-pc* nil "The Glulx VM program counter")
 (defvar *glx-string-table* nil "The Glulx VM string table")
 (defvar *glx-ram-start* nil "A pointer to the location in memory of the start of RAM")
-(defvar *glx-glk-selected* nil "Is the GLK IO system selected?")
+(defvar *glx-iosys* (list (lambda (c)) glx-0 glx-0) "The current io system")
 (defvar *glx-undo* nil "Undo information for the Glulx VM")
 (defvar *glx-glk-id-gen* 0 "Generates glk ids for new glk opaque objects")
 (defvar *glx-store-event-memptr* nil "Where to store the glk event on re-entry")
@@ -189,5 +189,20 @@ The value is truncated to the given number of bytes."
 
 (defun glx-gen-inst-function (name)
   (intern (concat "glx-instruction-" (symbol-name name))))
+
+(defun glx-iosys-charfun ()
+  (if *glx-iosys*
+      (first *glx-iosys*)
+    (signal 'glx-glk-error (list "No iosys selected"))))
+
+(defun glx-iosys-rock ()
+  (if *glx-iosys*
+      (second *glx-iosys*)
+    (signal 'glx-glk-error (list "No iosys selected"))))
+
+(defun glx-iosys-id ()
+  (if *glx-iosys*
+      (third *glx-iosys*)
+    (signal 'glx-glk-error (list "No iosys selected"))))
 
 (provide 'glx-glulx)
