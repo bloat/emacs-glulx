@@ -65,7 +65,7 @@
       (progn
         (glki-init (make-frame))
         (glx-process-header)
-        (glx-call-function-and-return-to-emacs (glx-memory-get-32 (glx-32 24))))
+        (glx-call-function-and-return-to-emacs (glx-memory-get-32 (glx-32 24)) nil))
     (glx-cleanup)))
 
 (defun glx-cleanup ()

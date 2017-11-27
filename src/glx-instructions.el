@@ -119,8 +119,17 @@
 
 (defun glx-instruction-return (modes result)
   (let* ((call-stub (glx-return-from-function))
-         (store-fun (glx-dest-type->store-fun (car call-stub))))
-    (funcall store-fun (cadr call-stub) result)))
+         (dest-type (glx-call-stub-dest-type call-stub)))
+
+    ;; The dest-type may have a symbol if we want to stop 
+    ;; executing glulx code when returning from this glulx function.
+    ;; If so we signal this by return the dest-type up to the
+    ;; main glulx loop.
+    (if (numberp dest-type)
+        (funcall (glx-dest-type->store-fun dest-type)
+                 (glx-call-stub-dest-addr call-stub)
+                 result)
+      dest-type)))
 
 (glx-defopcode 'return #x31 '(load) #'glx-instruction-return)
 

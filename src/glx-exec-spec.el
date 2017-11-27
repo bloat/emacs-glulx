@@ -229,3 +229,12 @@
   (let ((*glx-memory* (vector 0 0 0 0)))
     (glx-store-mem glx-0 (glx-32 9 8 7 6) 4)
     (should (equal *glx-memory* [0 0 0 0]))))
+
+(ert-deftest call-function-and-return-to-emacs ()
+  "Call function and return to emacs"
+  :tags '(exec)
+  ;; A function which only returns 0
+  (let ((*glx-memory* [#xc0 0 0 #x31 0])
+        (*glx-stack* nil))
+    ;; This will run off the end of the memory vector if it doesn't return properly.
+    (glx-call-function-and-return-to-emacs glx-0 nil)))

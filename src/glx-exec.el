@@ -118,7 +118,8 @@ Also returns the addressing modes themselves. "
 
 (defsubst glx-process-instruction-result (result)
   (not (or (eq result 'glk-no-return)
-           (eq result 'glx-quit))))
+           (eq result 'glx-quit)
+           (eq result 'glx-return-to-emacs))))
 
 (defun glx-execute-instruction (opcode args modes)
   (let ((instruction (gethash opcode glx-instructions)))
@@ -170,11 +171,11 @@ Also returns the addressing modes themselves. "
             (glx-execute-uncompiled-instruction))))
     (glx-execute-uncompiled-instruction)))
 
-(defun glx-call-function-and-return-to-emacs (memptr)
+(defun glx-call-function-and-return-to-emacs (memptr args)
   "Calls the function at MEMPTR and keeps running the Glulx VM
 calling more functions as required until this top-level function
 returns."
-  (glx-call-function (glx-memory-get-32 (glx-32 24)) 'game-over 0 '())
+  (glx-call-function memptr 'glx-return-to-emacs 0 args)
   (while (glx-execute-next-instruction)))
 
 (provide 'glx-exec)

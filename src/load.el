@@ -54,6 +54,7 @@
 (require 'glk-stream)
 (require 'glk-window)
 
+(require 'ert)
 (ert-delete-all-tests)
 
 (load "glx-value-spec.el")
