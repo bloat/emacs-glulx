@@ -20,7 +20,7 @@
                           (should (equal arg1 glx-2))
                           (should (equal arg2 glx-1))
                           2)
-                        #'identity #'identity) *glx-glk-functions*)
+                        (list #'identity 0) (list #'identity 1)) *glx-glk-functions*)
     (should (equal (glx-glk-call #x40 2) glx-2))
     (should fun-called)))
 
@@ -46,7 +46,9 @@
   (let ((*glx-glk-functions* (make-hash-table))
         (*glx-stack* (list (list (list glx-1))))
         (*glx-memory* (vector nil nil nil nil nil)))
-    (puthash #x40 (list (lambda () (list '\(0\ 0\ 0\ 4\) '\(0\ 0\ 0\ 1\))) (list 1 #'glx-store-mem)) *glx-glk-functions*)
+    (puthash #x40 (list (lambda () (list '\(0\ 0\ 0\ 4\) '\(0\ 0\ 0\ 1\)))
+                        (list (list 0) (list 1) (lambda (opq memptr)
+                                                  (glx-store-mem memptr (glx-glk-opq->glx-32 opq))))) *glx-glk-functions*)
     (should (equal (glx-glk-call #x40 1) glx-4))
     (should (equal *glx-memory* [nil 0 0 0 1]))))
 
@@ -57,22 +59,13 @@
         (*glx-glk-functions* (make-hash-table))
         (*glx-stack* (list (list (list glx-8)))))
     (puthash #x40 (list (lambda () (list 4 '(hello you)))
-                        (list 1 (lambda (memptr result)
-                                  (setq fun-called t)
-                                  (should (equal memptr glx-8))
-                                  (should (equal result '(hello you))))))
+                        (list (list 0) (list 1) (lambda (result memptr)
+                                                  (setq fun-called t)
+                                                  (should (equal memptr glx-8))
+                                                  (should (equal result '(hello you))))))
              *glx-glk-functions*)
     (should (equal (glx-glk-call #x40 1) glx-4))
     (should fun-called)))
-
-(ert-deftest arity-mismatch ()
-  "arity mismatch"
-  :tags '(glk)
-  (let ((*glx-glk-functions* (make-hash-table))
-        (*glx-stack* (list (list (list glx-0))))
-        (*glx-memory* [nil nil nil nil]))
-    (puthash #x40 (list (lambda () glx-0)) *glx-glk-functions*)
-    (should-error (glx-glk-call #x40 1) :type 'glx-glk-error)))
 
 (ert-deftest glk-calls-that-need-new-ids ()
   "glk calls that need new ids"
@@ -83,7 +76,8 @@
     (puthash #x40 (list (lambda (arg1 arg2)
                           (should (equal arg1 '\(0\ 0\ 0\ 1\)))
                           (should (equal arg2 '\(0\ 0\ 0\ 2\))))
-                        'gen-id 'gen-id) *glx-glk-functions*)
+                        (list #'glx-get-next-glk-id)
+                        (list #'glx-get-next-glk-id)) *glx-glk-functions*)
     (glx-glk-call #x40 0)))
 
 (ert-deftest glx-32->glk-opq-should-convert-0-to-nil ()
