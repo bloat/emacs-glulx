@@ -12,14 +12,13 @@
 (eval-when-compile
   (require 'cl))
 
-(require 'glk-function-dispatch)
 (require 'glk-window)
 (require 'glk-base)
 
 (defvar glk-event-queue '())
 
 (defvar glk-select-waiting nil)
-(defvar glk-event-reentry-function #'(lambda (event) (glki-send-return-value event 'glk-select-waiting)))
+(defvar glk-event-reentry-function #'identity)
 
 (defun glki-add-event-to-queue (event)
   "Adds the given event to the event queue"
@@ -40,10 +39,12 @@
 
 (defun glki-get-line-event-request (glk-window)
   "Returns any line event request on the given window"
+  (glx-log "Getting line event request %s" (get glk-window 'glk-line-event))
   (get glk-window 'glk-line-event))
 
 (defun glki-add-line-event-request (window-id c-buffer)
   "Mark the window has having a line event request on it"
+  (glx-log "adding line even request %s %s" window-id c-buffer)
   (put window-id 'glk-line-event c-buffer))
 
 (defun glki-clear-line-event-request (window-id)
@@ -133,7 +134,9 @@
       (newline)
       (when event-request
         (glki-add-event-to-queue
-         (glki-create-line-input-event event-text (glki-get-c-buffer event-request)))))))
+         (let ((new-event (glki-create-line-input-event event-text (glki-get-c-buffer event-request))))
+           (glx-log "new event : %s" new-event)
+           new-event))))))
 
 (unless glk-mode-map
   (let ((map (make-sparse-keymap)))

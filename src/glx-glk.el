@@ -47,6 +47,7 @@
 (puthash #xa0 (list #'glk-char-to-lower #'glx-32->int) *glx-glk-functions*)
 (puthash #xb0 (list (lambda (a b c d) nil) #'identity #'identity #'identity #'identity) *glx-glk-functions*)
 (puthash #xc0 (list #'glx-glk-select #'identity) *glx-glk-functions*)
+(puthash #xc1 (list #'glx-glk-select-poll #'identity) *glx-glk-functions*)
 (puthash #xd0 (list #'glk-request-line-event
                     #'glx-32->glk-opq #'identity
                     #'glx-32->int #'glx-32->int) *glx-glk-functions*)
@@ -94,17 +95,38 @@ entire glk call."
 (defun glx-32->glk-opq (value)
   (if (glx-0-p value) nil (intern (prin1-to-string value))))
 
+(defconst glk-winmethod-position-decode
+  '((3 glk-winmethod-below) (2 glk-winmethod-above) (1 glk-winmethod-right) (0 glk-winmethod-left)))
+
+(defun glki-winmethod (winmethod)
+  (list
+   (cadr (assoc (logand winmethod #xf) glk-winmethod-position-decode))
+   (if (>= winmethod #x20)
+       'glk-winmethod-proportional
+     'glk-winmethod-fixed)))
+
 (defun glx-32->glk-winmethod (value)
   (glki-winmethod (glx-32->int value)))
 
 (defun glx-32->glk-wintype (value)
-  (glki-wintype (glx-32->int value)))
+  (case (glx-32->int value)
+    (0 'glk-wintype-all-types)
+    (1 'glk-wintype-pair)
+    (2 'glk-wintype-blank)
+    (3 'glk-wintype-text-buffer)
+    (4 'glk-wintype-text-grid)
+    (5 'glk-wintype-graphics)))
 
 (defun glx-32->glk-style (value)
-  (glki-style (glx-32->int value)))
+  (case (glx-32->int value)
+    (1 'glk-emphasizes-face)
+    (3 'glk-header-face)
+    (4 'glk-subheader-face)
+    (t 'glk-normal-face)))
 
 (defun glx-32->glk-gestalt-selector (value)
-  (glki-gestalt-selector (glx-32->int value)))
+  (case (glx-32->int value)
+    (0 'glk-gestalt-version)))
 
 (defun glx-glk-opq->glx-32 (value)
   (read (symbol-name value)))
@@ -129,8 +151,15 @@ glk call."
           (setq *glx-store-event-memptr* event-memptr)
           (setq *glx-unexpected-exit* nil)
           'glk-no-return)
+      (glx-log "Storing event at %s : %s" event-memptr result)
       (glx-glk-store-event result event-memptr)
       glx-0)))
+
+(defun glx-glk-select-poll (event-memptr)
+  (glx-glk-store-event (list 'glk-evtype-none
+                             (glx-32->glk-opq glx-0)
+                             0
+                             0) event-memptr))
 
 (defun glx-glk-event-callback (event)
   (setq *glx-unexpected-exit* t)
@@ -154,14 +183,21 @@ If the memory address is 0 then all results are discarded."
         (glx-memory-set memptr val 4)
         (setf memptr (glx-+ glx-4 memptr))))))
 
+(defun glx-glk-event-type->int (event-type)
+  (cond
+   ((eq event-type 'glk-evtype-none) 0)
+   ((eq event-type 'glk-evtype-lineinput) 3)))
+
+
 (defun glx-glk-store-event (event memptr)
   (glx-log "storing event to location: %S - %S" memptr event)
   (glx-store-glk-structure memptr
-                           (list (glx-32 (glki-event-type->int (first event)))
+                           (list (glx-32 (glx-glk-event-type->int (first event)))
                                  (glx-glk-opq->glx-32 (second event))
                                  (glx-32 (third event))
                                  (glx-32 (fourth event))))
-  (glx-memory-set-string (fifth event) (sixth event)))
+  (when (eq (first event) 'glk-evtype-lineinput)
+    (glx-memory-set-string (fifth event) (sixth event))))
 
 (defun glx-memory-set-unicode-string (memptr string)
   (mapcar (lambda (c) (glx-memory-set memptr (glx-32 c) 4) (setq memptr (glx-+ glx-4 memptr))) string))

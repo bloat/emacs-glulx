@@ -28,7 +28,6 @@
 (when (featurep 'glk-encoding) (unload-feature 'glk-encoding t))
 (when (featurep 'glk-event) (unload-feature 'glk-event t))
 (when (featurep 'glk-file) (unload-feature 'glk-file t))
-; (unload-feature 'glk-function-dispatch t)
 (when (featurep 'glk-opaque) (unload-feature 'glk-opaque t))
 (when (featurep 'glk-stream) (unload-feature 'glk-stream t))
 (when (featurep 'glk-window) (unload-feature 'glk-window t))
@@ -49,7 +48,6 @@
 (require 'glk-encoding)
 (require 'glk-event)
 (require 'glk-file)
-; (require 'glk-function-dispatch)
 (require 'glk-opaque)
 (require 'glk-stream)
 (require 'glk-window)
@@ -68,7 +66,6 @@
 (load "glx-compile-spec.el")
 
 (load "window-spec.el")
-;; (load "function-dispatch-spec")
 (load "stream-spec.el")
 (load "event-spec.el")
 (load "mode-spec.el")

@@ -36,19 +36,6 @@
     (glki-add-event-to-queue '(glk-evtype-lineinput window 8 0 0x3456 "go north"))
     (should (equal glk-event-queue '((glk-evtype-lineinput window 8 0 0x3456 "go north"))))))
 
-(ert-deftest glki-add-event-to-queue-should-pass-event-to-output-stream-if-glk-select-is-waiting ()
-  "glki-add-event-to-queue should pass event to output stream if glk-select is waiting"
-  :tags '(glk event)
-  (let ((glk-select-waiting t)
-        (send-return-value-was-called))
-    (cl-flet ((test-glki-send-return-value (a b) (setq send-return-value-was-called t)))
-      (unwind-protect
-          (progn
-            (advice-add 'glki-send-return-value :override #'test-glki-send-return-value '((name . test-glki-send-return-value)))
-            (glki-add-event-to-queue '(glk-evtype-lineinput window 8 0 0x3456 "go north"))
-            (should send-return-value-was-called))
-        (advice-remove 'glki-send-return-value 'test-glki-send-return-value)))))
-
 (ert-deftest glki-create-line-input-event-should-create-an-event ()
   "glki-create-line-input-event should create an event"
   :tags '(glk event)
