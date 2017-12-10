@@ -106,6 +106,10 @@
                     (list #'glx-32->int 2)
                     (list #'glx-32->int 3)) *glx-glk-functions*)
 
+(puthash #x120 (list #'glk-buffer-to-lower-case-uni
+                     (list #'glx-glk-load-unicode-string-buffer 0 2)
+                     (list (list 0 1) (list 1) #'glx-glk-store-unicode-string-buffer)) *glx-glk-functions*)
+
 (puthash #x128 (list #'glk-put-char
                      (list #'glx-32->int 0)) *glx-glk-functions*)
 
@@ -144,7 +148,7 @@ be ARG-COUNT args on the stack."
       (if (functionp (car marshall))
           (push (apply (car marshall) (glx-glk-select-args-for-marshalling all-args (cdr marshall))) args)
         (push (cons (glx-glk-select-args-for-marshalling all-args (car marshall)) (cdr marshall)) stores)))
-    
+
     (glx-log "Calling glk function %x with args %S - stores %S" selector (reverse args) stores)
     (glx-handle-glk-results (apply (car glk-fun) (reverse args)) stores)))
 
@@ -207,7 +211,9 @@ entire glk call."
     (0 'glk-gestalt-version)))
 
 (defun glx-glk-opq->glx-32 (value)
-  (read (symbol-name value)))
+  (if (null value)
+      glx-0
+    (read (symbol-name value))))
 
 (defun glx-glk-result->32 (result)
   (cond ((null result) glx-0)
@@ -234,6 +240,7 @@ glk call."
       glx-0)))
 
 (defun glx-glk-select-poll (event-memptr)
+  (debug)
   (glx-glk-store-event (list 'glk-evtype-none
                              (glx-32->glk-opq glx-0)
                              0
@@ -247,8 +254,8 @@ glk call."
         (while (glx-execute-next-instruction)))
     (glx-cleanup)))
 
-(defun glx-store-glk-result (memptr result)
-  (glx-store-glk-structure memptr (list result)))
+(defun glx-store-glk-result (result memptr)
+  (glx-store-glk-structure memptr (list (glx-32 result))))
 
 (defun glx-store-glk-structure (memptr struct)
   "Stores a glk structure i.e. a list of 32 bit values into memory.
@@ -280,7 +287,7 @@ If the memory address is 0 then all results are discarded."
 (defun glx-memory-set-unicode-string (memptr string)
   (mapcar (lambda (c) (glx-memory-set memptr (glx-32 c) 4) (setq memptr (glx-+ glx-4 memptr))) string))
 
-(defun glx-glk-store-closed-memory-stream (memptr stream)
+(defun glx-glk-store-closed-memory-stream (stream memptr)
   (glx-log "storing stream to location: %S - %S" memptr stream)
   (glx-store-glk-structure memptr
                            (list (glx-32 (first stream))
@@ -288,6 +295,18 @@ If the memory address is 0 then all results are discarded."
   (if (third stream)
       (glx-memory-set-unicode-string (fourth stream) (fifth stream))
     (glx-memory-set-string (fourth stream) (fifth stream))))
+
+(defun glx-glk-load-unicode-string-buffer (memptr length)
+  (let (chars)
+    (dotimes (i (glx-32->int length) (apply #'string (nreverse chars)))
+      (push (glx-32->unicode-char (glx-memory-get-32 memptr)) chars)
+      (setq memptr (glx-+ glx-4 memptr)))))
+
+(defun glx-glk-store-unicode-string-buffer (str memptr buflen)
+  (dotimes (i (glx-32->int buflen))
+    (when (< i (length str))
+      (glx-memory-set memptr (glx-32 (encode-char (aref str i) 'unicode)) 4)
+      (setq memptr (glx-+ glx-4 memptr)))))
 
 (provide 'glx-glk)
 

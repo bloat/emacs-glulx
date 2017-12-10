@@ -116,19 +116,33 @@
 (ert-deftest storing-a-closed-memory-stream-into-glulx-memory ()
   "storing a closed memory stream into glulx memory"
   :tags '(glk)
-  :expected-result :failed
   (let ((*glx-memory* (make-vector 14 0)))
-    (glx-glk-store-closed-memory-stream glx-0 '(0 5 (0 0 0 9) "hello"))
+    (glx-glk-store-closed-memory-stream '(0 5 nil (0 0 0 9) "hello") glx-1)
     (should (equal *glx-memory*
-                   [0 0 0 0
+                   [0 0 0 0 0
                       0 0 0 5
-                      0 104 101 108 108 111]))))
+                      104 101 108 108 111]))))
 
 (ert-deftest storing-a-closed-memory-stream-onto-the-stack ()
   "storing a closed memory stream onto the stack"
   :tags '(glk)
   (let ((*glx-memory* (make-vector 5 0))
         (*glx-stack* (list (list (list)))))
-    (glx-glk-store-closed-memory-stream (glx-32 -1) '(0 5 nil (0 0 0 0) "hello"))
+    (glx-glk-store-closed-memory-stream '(0 5 nil (0 0 0 0) "hello") (glx-32 -1))
     (should (equal *glx-memory* [104 101 108 108 111]))
     (should (equal *glx-stack* (list (list (list glx-5 glx-0)))))))
+
+(ert-deftest passing-a-unicode-string-buffer-to-a-glk-function ()
+  "Passing a unicode-string buffer to a glk function"
+  :tags '(glk)
+  (let (fun-called
+        (*glx-glk-functions* (make-hash-table))
+        (*glx-stack* (list (list (list glx-0 glx-5))))
+        (*glx-memory* [0 0 0 104 0 0 0 101 0 0 0 108 0 0 0 108 0 0 0 111]))
+    (puthash #x40 (list (lambda (arg1)
+                          (setq fun-called t)
+                          (should (equal arg1 "hello"))
+                          5)
+                        (list #'glx-glk-load-unicode-string-buffer 0 1)) *glx-glk-functions*)
+    (should (equal (glx-glk-call #x40 2) glx-5))
+    (should fun-called)))

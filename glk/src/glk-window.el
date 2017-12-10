@@ -44,7 +44,7 @@
   "Cleans up all glk windows and destroys the associated buffers"
   (mapcar #'glki-dispose-window glki-opq-window))
 
-(defun glki-generate-new-window (type new-window-id new-stream-id)
+(defun glki-generate-new-window (type new-window-id new-stream-id rock)
   "Generate a new glk window"
   (let ((buffer (if (eq type 'glk-wintype-pair)
                     nil
@@ -57,6 +57,7 @@
       (glki-opq-window-set-buffer new-window buffer)
       (glki-opq-window-set-type new-window type)
       (glki-opq-window-set-stream new-window (glki-create-window-stream new-window-id new-stream-id))
+      (glki-opq-window-set-rock new-window rock)
       (glki-set-glk-mode new-window-id)
       new-window)))
 
@@ -67,10 +68,10 @@
       (kill-buffer (glki-opq-window-get-buffer window)))
   (glki-opq-window-dispose window))
 
-(defun glki-create-first-window (type new-window-id new-stream-id)
+(defun glki-create-first-window (type new-window-id new-stream-id rock)
   "Generate the first GLK window"
   (let ((window-on-glk-frame (frame-first-window glk-frame))
-        (new-window (glki-generate-new-window type new-window-id new-stream-id)))
+        (new-window (glki-generate-new-window type new-window-id new-stream-id rock)))
      (delete-other-windows window-on-glk-frame)
     (set-window-buffer window-on-glk-frame (glki-opq-window-get-buffer new-window))
     (setq glk-root-window new-window)))
@@ -119,11 +120,11 @@
   "Creates a new glk window and a new buffer for it to display"
   (cond ((null split)
          (when (null glk-root-window)
-           (glki-create-first-window wintype new-window-id new-window-stream-id)))
+           (glki-create-first-window wintype new-window-id new-window-stream-id rock)))
         (t
          (condition-case the-error
-             (let* ((new-glk-window (glki-generate-new-window wintype new-window-id new-window-stream-id))
-                    (new-pair-window (glki-generate-new-window 'glk-wintype-pair new-parent-id new-parent-stream-id))
+             (let* ((new-glk-window (glki-generate-new-window wintype new-window-id new-window-stream-id rock))
+                    (new-pair-window (glki-generate-new-window 'glk-wintype-pair new-parent-id new-parent-stream-id 0))
                     (old-emacs-window (glki-get-emacs-window split))
                     (new-emacs-window
                      (split-window old-emacs-window (glki-calc-new-window-size method old-emacs-window size wintype) (glki-vertical-split method))))

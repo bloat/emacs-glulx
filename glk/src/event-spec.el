@@ -14,7 +14,7 @@
   :tags '(glk event)
   (unwind-protect
       (progn
-        (glki-generate-new-window 'glk-wintype-text-buffer 'window 'stream)
+        (glki-generate-new-window 'glk-wintype-text-buffer 'window 'stream 0)
         (glk-request-line-event 'window "0x3456" 25 0)
         (should (glki-get-line-event-request 'window)))
     (glki-dispose-window 'window)))
@@ -41,7 +41,7 @@
   :tags '(glk event)
   (unwind-protect
       (progn
-        (glki-generate-new-window 'glk-wintype-text-buffer1 'window 'stream)
+        (glki-generate-new-window 'glk-wintype-text-buffer1 'window 'stream 0)
         (setq glk-root-window 'window)
         (save-excursion
           (set-buffer (glki-opq-window-get-buffer 'window))
@@ -104,7 +104,7 @@
     (unwind-protect
         (progn
           (advice-add 'glki-mode-add-input-to-event-queue :override #'test-glki-mode-add-input-to-event-queue '((name . test-glki-mode-add-input-to-event-queue)))
-          (glki-generate-new-window 'glk-wintype-text-buffer 'window 'stream)
+          (glki-generate-new-window 'glk-wintype-text-buffer 'window 'stream 0)
           (glk-request-line-event 'window '0x3456 25 0)
           (should (equal (glk-cancel-line-event 'window) '(glk-evtype-lineinput window 5 0 0x3456 "go no"))))
       (advice-remove 'glki-mode-add-input-to-event-queue 'test-glki-mode-add-input-to-event-queue)
@@ -115,7 +115,7 @@
   :tags '(glk event)
   (unwind-protect
       (progn
-        (glki-generate-new-window 'glk-wintype-text-buffer 'window 'stream)
+        (glki-generate-new-window 'glk-wintype-text-buffer 'window 'stream 0)
         (glk-request-char-event 'window)
         (should (glki-get-char-event-request 'window)))
     (glki-dispose-window 'window)))

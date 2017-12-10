@@ -12,7 +12,7 @@
 (macrolet ((with-glk-window (&body body)
                             `(unwind-protect
                                  (progn
-                                   (glki-generate-new-window 'glk-wintype-text-buffer 'window 'stream)
+                                   (glki-generate-new-window 'glk-wintype-text-buffer 'window 'stream 42)
                                    (setq glk-root-window 'window)
                                    ,@body)
                                (kill-buffer "*glk*")

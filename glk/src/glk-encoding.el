@@ -12,4 +12,23 @@
 (defun glk-char-to-lower (ch)
   (downcase ch))
 
+(defun glk-char-to-upper (ch)
+  (upcase ch))
+
+(defun glk-buffer-to-lower-case-uni (string)
+  (let ((result (downcase string)))
+    (list (length result) result)))
+
+(defun glk-buffer-to-upper-case-uni (string)
+  (let ((result (upcase string)))
+    (list (length result) result)))
+
+(defun glk-buffer-to-title-case-uni (string lowerrest)
+  (let ((result)
+        (concat (list (upcase (aref string 0)))
+                (if lowerrest
+                    (downcase (substring string 1))
+                  (substring string 1))))
+    (list (length result) result)))
+
 (provide 'glk-encoding)

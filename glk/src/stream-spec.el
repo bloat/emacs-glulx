@@ -49,7 +49,7 @@
     "glk-put-string should write to current stream and propertize the text"
     :tags '(glk stream)
     (clean-up-and-check
-     (glki-generate-new-window 'glk-wintype-text-buffer 'window 'a-stream)
+     (glki-generate-new-window 'glk-wintype-text-buffer 'window 'a-stream 0)
      (glk-set-window 'window)
      (glk-put-string "You are in a room")
      (save-current-buffer
@@ -62,7 +62,7 @@
     "glk-put-char should write to current stream"
     :tags '(glk stream)
     (clean-up-and-check
-     (glki-generate-new-window 'glk-wintype-text-buffer 'window 'a-stream)
+     (glki-generate-new-window 'glk-wintype-text-buffer 'window 'a-stream 0)
      (glk-set-window 'window)
      (glk-put-char ?Y)
      (save-current-buffer
@@ -117,7 +117,7 @@
     "glk-put-string should fill strings"
     :tags '(glk stream)
     (clean-up-and-check
-     (glki-generate-new-window 'glk-wintype-text-buffer 'window 'a-stream)
+     (glki-generate-new-window 'glk-wintype-text-buffer 'window 'a-stream 0)
      (glk-set-window 'window)
      (save-excursion
        (set-buffer "*glk*")

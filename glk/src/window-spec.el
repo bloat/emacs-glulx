@@ -244,7 +244,7 @@
     :tags '(glk window)
     (with-test-functions
      (unwind-protect
-         (let ((test-window (glki-generate-new-window 'glk-wintype-text-buffer 'window1 'stream))
+         (let ((test-window (glki-generate-new-window 'glk-wintype-text-buffer 'window1 'stream 0))
                (current-point (get-point-in-window 'window1)))
            (glk-window-move-cursor 'window1 5 5)
            (should (equal (get-point-in-window 'window1) current-point)))
