@@ -115,9 +115,6 @@ on to the right."
   (let ((xb (glx-32-get-bytes-as-list-big-endian x)))
     (glx-32 digit (fourth x) (third x) (second x))))
 
-(defun glx-negp (x)
-  (not (zerop (logand 128 (first (glx-32-get-bytes-as-list-big-endian x))))))
-
 (defun glx-/ (x y)
   "Long division using the four radix 256 digits of a glx-32.
 Returns the result and the remainder."
@@ -127,8 +124,8 @@ Returns the result and the remainder."
   
   (let* ((x-abs (glx-abs x))
          (y-abs (glx-abs y))
-         (x-neg (glx-negp x))
-         (y-neg (glx-negp y))
+         (x-neg (glx-neg-p x))
+         (y-neg (glx-neg-p y))
          (xb (glx-32-get-bytes-as-list-big-endian x-abs)))
 
     (multiple-value-bind (div1 rem1) (glx-subtraction-div (glx-32 (first xb)) y-abs)
@@ -260,6 +257,7 @@ Returns the result and the remainder."
 
 (defun glx-32-rand (limit)
   (cond ((glx-0-p limit) (glx-32 (random 256) (random 256) (random 256) (random 256)))
+        ((glx-neg-p limit) (glx-32 (* -1 (random (glx-32->int (glx-abs limit))))))
         (t (glx-32 (random (glx-s32->int limit))))))
 
 (defun glx-32-u> (a b)
@@ -291,8 +289,8 @@ Returns the result and the remainder."
         ;; this is required when dealing with the largest 32 bit negative number
         ;; since we can't represent it's absolute value in 32 bits - glx-abs is a noop for
         ;; this number.
-        (when (glx-negp rem) (setq rem (glx-abs rem)))
-        (when (glx-negp x-abs) (setq x-abs (glx-abs x-abs)))
+        (when (glx-neg-p rem) (setq rem (glx-abs rem)))
+        (when (glx-neg-p x-abs) (setq x-abs (glx-abs x-abs)))
 
         (setq result (concat (prin1-to-string (glx-32->int rem)) result)))
       (if neg

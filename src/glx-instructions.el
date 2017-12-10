@@ -278,6 +278,7 @@
 
 (glx-defopcode 'jumpabs #x104 '(load) #'glx-instruction-jumpabs)
 (glx-def-store random #x110 (l1) (glx-32-rand l1))
+(glx-defopcode 'setrandom #x111 '(load) (lambda (modes seed) (random (format "%S" seed))))
 (glx-defopcode 'quit #x120 '() (lambda (modes) 'glx-quit))
 (glx-def-store saveundo #x125 () (progn (glx-save-undo) glx-0))
 (glx-def-store restoreundo #x126 () (glx-restore-undo))
