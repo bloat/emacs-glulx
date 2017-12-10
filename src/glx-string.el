@@ -38,8 +38,7 @@ string terminator (a zero byte)."
   "Loads a string consisting of unicode characters (four bytes each) from the 
 Glulx VM memory location given by the 32 bit MEMPTR. The string is terminated
 by a 32 bit 0."
-  (let (result 
-        char)
+  (let (char)
     (while (not (glx-0-p (setq char (glx-memory-get-32 memptr))))
       (funcall (glx-iosys-charfun) (glx-32->unicode-char char))
       (setq memptr (glx-+ glx-4 memptr)))))

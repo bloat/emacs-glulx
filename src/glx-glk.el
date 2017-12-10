@@ -80,7 +80,13 @@
                     (list (list 1) (list 1) #'glx-store-glk-result)) *glx-glk-functions*)
 
 (puthash #x80 (list #'glk-put-char
-                    (list #'glx-32->int 0)) *glx-glk-functions*)
+                    (list (lambda (c) (if ) (nth 3 (glx-32-get-bytes-as-list-big-endian c))) 0)) *glx-glk-functions*)
+
+(puthash #x82 (list #'glk-put-string
+                    (list #'glx-glk-load-string 0)) *glx-glk-functions*)
+
+(puthash #x84 (list #'glk-put-string
+                    (list #'glx-glk-load-string-buffer 0 1)) *glx-glk-functions*)
 
 (puthash #x86 (list #'glk-set-style
                     (list #'glx-32->glk-style 0)) *glx-glk-functions*)
@@ -112,6 +118,12 @@
 
 (puthash #x128 (list #'glk-put-char
                      (list #'glx-32->int 0)) *glx-glk-functions*)
+
+(puthash #x129 (list #'glk-put-string
+                     (list #'glx-glk-load-string-uni 0)) *glx-glk-functions*)
+
+(puthash #x12a (list #'glk-put-string
+                     (list #'glx-glk-load-unicode-string-buffer 0 1)) *glx-glk-functions*)
 
 (puthash #x139 (list #'glk-stream-open-memory-uni
                      (list #'identity 0)
@@ -240,7 +252,6 @@ glk call."
       glx-0)))
 
 (defun glx-glk-select-poll (event-memptr)
-  (debug)
   (glx-glk-store-event (list 'glk-evtype-none
                              (glx-32->glk-opq glx-0)
                              0
@@ -296,9 +307,15 @@ If the memory address is 0 then all results are discarded."
       (glx-memory-set-unicode-string (fourth stream) (fifth stream))
     (glx-memory-set-string (fourth stream) (fifth stream))))
 
-(defun glx-glk-load-unicode-string-buffer (memptr length)
+(defun glx-glk-load-string-buffer (memptr buflen)
   (let (chars)
-    (dotimes (i (glx-32->int length) (apply #'string (nreverse chars)))
+    (dotimes (i (glx-32->int buflen) (apply #'string (nreverse chars)))
+      (push (glx-memory-get-byte-int memptr) chars)
+      (setq memptr (glx-+1 memptr)))))
+
+(defun glx-glk-load-unicode-string-buffer (memptr buflen)
+  (let (chars)
+    (dotimes (i (glx-32->int buflen) (apply #'string (nreverse chars)))
       (push (glx-32->unicode-char (glx-memory-get-32 memptr)) chars)
       (setq memptr (glx-+ glx-4 memptr)))))
 
@@ -308,5 +325,22 @@ If the memory address is 0 then all results are discarded."
       (glx-memory-set memptr (glx-32 (encode-char (aref str i) 'unicode)) 4)
       (setq memptr (glx-+ glx-4 memptr)))))
 
-(provide 'glx-glk)
+(defun glx-glk-load-string (memptr)
+  (let (char
+        result)
+    (setq memptr (glx-+1 memptr))    
+    (while (not (zerop (setq char (glx-memory-get-byte-int memptr))))
+      (push char result)
+      (setq memptr (glx-+1 memptr)))
+    (apply #'string (nreverse result))))
 
+(defun glx-glk-load-string-uni (memptr)
+  (let (char
+        result)
+    (setq memptr (glx-+ glx-4 memptr))
+    (while (not (glx-0-p (setq char (glx-memory-get-32 memptr))))
+      (push (glx-32->unicode-char char) result)
+      (setq memptr (glx-+ glx-4 memptr)))
+    (apply #'string (nreverse result))))
+
+(provide 'glx-glk)
