@@ -305,6 +305,7 @@
 
 (glx-def-store linearsearch #x150 (l1 l2 l3 l4 l5 l6 l7) (glx-memory-linear-search l1 l2 l3 l4 l5 l6 l7))
 (glx-def-store binarysearch #x151 (l1 l2 l3 l4 l5 l6 l7) (glx-memory-binary-search l1 l2 l3 l4 l5 l6 l7))
+(glx-def-store linkedsearch #x152 (l1 l2 l3 l4 l5 l6) (glx-memory-linked-search l1 l2 l3 l4 l5 l6))
 
 (defun glx-instruction-type-callf (fun-ptr arg-list store)
   (multiple-value-bind (dest-type dest-addr)

@@ -80,7 +80,7 @@
                     (list (list 1) (list 1) #'glx-store-glk-result)) *glx-glk-functions*)
 
 (puthash #x80 (list #'glk-put-char
-                    (list (lambda (c) (if ) (nth 3 (glx-32-get-bytes-as-list-big-endian c))) 0)) *glx-glk-functions*)
+                    (list (lambda (c) (nth 3 (glx-32-get-bytes-as-list-big-endian c))) 0)) *glx-glk-functions*)
 
 (puthash #x82 (list #'glk-put-string
                     (list #'glx-glk-load-string 0)) *glx-glk-functions*)

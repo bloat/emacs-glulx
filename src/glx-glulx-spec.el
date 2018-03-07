@@ -113,6 +113,12 @@
   (let ((*glx-memory* [0 0 0 1 0 0 0 0 0 0 0 2 0 0 0 3]))
     (should (equal (glx-memory-linear-search glx-3 glx-4 glx-0 glx-4 glx-4 glx-0 glx-2) glx-0))))
 
+(ert-deftest linear-search---zero-terminated-searching-for-zero ()
+  "Linear search - zero terminated, searching for zero"
+  :tags '(glulx)
+  (let ((*glx-memory* [0 0 0 1 0 0 0 0 0 0 0 2 0 0 0 3]))
+    (should (equal (glx-memory-linear-search glx-0 glx-4 glx-0 glx-4 glx-4 glx-0 glx-2) glx-4))))
+
 (ert-deftest linear-search---indirect-key ()
   "Linear search - indirect key"
   :tags '(glulx)
@@ -148,6 +154,58 @@
   :tags '(glulx)
   (let ((*glx-memory* [0 0 0 0 0 0 0 1 0 0 0 2 0 0 0 3]))
     (should (equal (glx-memory-binary-search glx-0 glx-4 glx-0 glx-4 glx-4 glx-0 glx-0) glx-0))))
+
+(ert-deftest linked-search---find-first-key ()
+  "Linear search - find first key"
+  :tags '(glulx)
+  (let ((*glx-memory* [0 0 0 0 0 0 0 0]))
+    (should (equal (glx-memory-linked-search glx-0 glx-4 glx-0 glx-0 glx-4 glx-0) glx-0))))
+
+(ert-deftest linked-search---find-a-subsequent-key ()
+  "Linear search - find a subsequent key"
+  :tags '(glulx)
+  (let ((*glx-memory* [0 0 0 0 0 0 0 16
+                         0 0 0 1 0 0 0 0
+                         0 0 0 2 0 0 0 24
+                         0 0 0 3 0 0 0 8]))
+    (should (equal (glx-memory-linked-search glx-2 glx-4 glx-0 glx-0 glx-4 glx-0) (glx-32 16)))))
+
+(ert-deftest linked-search---find-an-offset-subsequent-key ()
+  "Linked search - find an offset subsequent key"
+  :tags '(glulx)
+  (let ((*glx-memory* [0 0 0 0 0 0 0 0 27
+                         0 0 0 0 1 0 0 0 18
+                         0 0 0 0 2 0 0 0 0
+                         0 0 0 0 3 0 0 0 9]))
+    (should (equal (glx-memory-linked-search glx-2 glx-4 glx-0 glx-1 glx-5 glx-0) (glx-32 18)))))
+
+(ert-deftest linked-search---key-not-found ()
+  "Linked search - key not found"
+  :tags '(glulx)
+  (let ((*glx-memory* [0 0 0 0 0 0 0 16
+                         0 0 0 1 0 0 0 0
+                         0 0 0 2 0 0 0 24
+                         0 0 0 3 0 0 0 8]))
+    (should (equal (glx-memory-linked-search glx-4 glx-4 glx-0 glx-0 glx-4 glx-0) glx-0))))
+
+(ert-deftest linked-search---small-key ()
+  "Linked search - small key"
+  :tags '(glulx)
+  (let ((*glx-memory* [0 0 0 0 0 12
+                         0 1 0 0 0 18 
+                         0 2 0 0 0 6
+                         0 3 0 0 0 24
+                         0 4 0 0 0 0]))
+    (should (equal (glx-memory-linked-search glx-4 glx-2 glx-0 glx-0 glx-2 glx-0) (glx-32 24)))))
+
+(ert-deftest linked-search---indirect-key ()
+  "Linked search - indirect key"
+  :tags '(glulx)
+  (let ((*glx-memory* [0 0 0 0 1 0 0 0 9
+                         0 0 0 0 0 0 0 0 18
+                         0 0 0 0 2 0 0 0 27
+                         0 0 0 0 3 0 0 0 0]))
+    (should (equal (glx-memory-linked-search (glx-32 27) glx-5 glx-0 glx-0 glx-5 glx-1) (glx-32 27)))))
 
 (ert-deftest store-a-string-to-memory ()
   "Store a string to memory"
