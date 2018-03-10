@@ -214,6 +214,34 @@
     (glx-memory-set-string glx-1 "Glulx")
     (should (equal *glx-memory* [0 71 108 117 108 120]))))
 
+(ert-deftest zero-memory ()
+  "Write zeros to a segment of memory"
+  :tags '(glulx)
+  (let ((*glx-memory* [1 1 1 1 1]))
+    (glx-memory-mzero glx-3 glx-1)
+    (should (equal *glx-memory* [1 0 0 0 1]))))
+
+(ert-deftest copy-memory-non-overlapping ()
+  "Copy memory, non overlapping"
+  :tags '(glulx)
+  (let ((*glx-memory* [1 2 3 4 5 6 7 8]))
+    (glx-memory-mcopy glx-3 glx-1 glx-5)
+    (should (equal *glx-memory* [1 2 3 4 5 2 3 4]))))
+
+(ert-deftest copy-memory-forward-overlapping ()
+  "Copy memory, forward overlap"
+  :tags '(glulx)
+  (let ((*glx-memory* [1 2 3 4 5 6 7 8]))
+    (glx-memory-mcopy glx-4 glx-1 glx-3)
+    (should (equal *glx-memory* [1 2 3 2 3 4 5 8]))))
+
+(ert-deftest copy-memory-backward-overlapping ()
+  "Copy memory, backward overlap"
+  :tags '(glulx)
+  (let ((*glx-memory* [1 2 3 4 5 6 7 8]))
+    (glx-memory-mcopy glx-4 glx-4 glx-2)
+    (should (equal *glx-memory* [1 2 5 6 7 8 7 8]))))
+
 (ert-deftest save-undo ()
   "Save undo"
   :tags '(glulx)

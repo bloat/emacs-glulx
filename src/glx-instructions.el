@@ -268,7 +268,10 @@
                                                                      (equal l2 glx-1)
                                                                      (equal l2 glx-2))
                                                                  glx-1
-                                                               glx-0))))
+                                                               glx-0))
+                                           ((equal glx-5 l1) glx-1)
+                                           ((equal (glx-32 6) l1) glx-1)
+                                           (glx-0)))
 
 (glx-def-store getmemsize #x102 () (glx-32 (length *glx-memory*)))
 
@@ -328,6 +331,9 @@
 (glx-defopcode 'callfi #x161 '(load load store) #'glx-instruction-callfi)
 (glx-defopcode 'callfii #x162 '(load load load store) #'glx-instruction-callfii)
 (glx-defopcode 'callfiii #x163 '(load load load load store) #'glx-instruction-callfiii)
+
+(glx-defopcode 'mzero #x170 '(load load) (lambda (modes l1 l2) (glx-memory-mzero l1 l2)))
+(glx-defopcode 'mcopy #x171 '(load load load) (lambda (modes l1 l2 l3) (glx-memory-mcopy l1 l2 l3)))
 
 (glx-def-store malloc '#x178 (l1) 0)
 

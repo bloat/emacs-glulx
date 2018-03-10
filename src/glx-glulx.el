@@ -189,6 +189,24 @@ The value is truncated to the given number of bytes."
       (setq end-of-list (glx-0-p start)))
     result))
 
+(defun glx-memory-mzero (count memptr)
+  "Write COUNT zero bytes to memory starting at the address given by MEMPTR"
+  (unless (glx-0-p count)
+    (let ((ptr (glx-32->int memptr)))
+      (dotimes (n (glx-32->int count))
+        (aset *glx-memory* ptr 0)
+        (incf ptr)))))
+
+(defun glx-memory-mcopy (count source target)
+  (let ((sourcei (glx-32->int source))
+        (targeti (glx-32->int target))
+        (counti (glx-32->int count)))
+    (if (< targeti sourcei)
+        (dotimes (n counti)
+          (aset *glx-memory* (+ targeti n) (aref *glx-memory* (+ sourcei n))))
+      (dotimes (n counti)
+        (aset *glx-memory* (+ targeti (- (- counti 1) n)) (aref *glx-memory* (+ sourcei (- (- counti 1) n))))))))
+
 (defun glx-save-undo ()
   (setq *glx-undo*
         (list (copy-sequence *glx-memory*)
