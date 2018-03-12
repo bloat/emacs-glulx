@@ -263,7 +263,7 @@
 (glx-def-store gestalt #x100 (l1 l2) (cond ((equal glx-0 l1) (glx-32 0 1 3))
                                            ((equal glx-1 l1) glx-0)
                                            ((equal glx-2 l1) glx-1)
-                                           ((equal glx-3 l1) glx-0)
+                                           ((equal glx-3 l1) glx-1)
                                            ((equal glx-4 l1) (if (or (equal l2 glx-0)
                                                                      (equal l2 glx-1)
                                                                      (equal l2 glx-2))
@@ -283,8 +283,12 @@
 (glx-def-store random #x110 (l1) (glx-32-rand l1))
 (glx-defopcode 'setrandom #x111 '(load) (lambda (modes seed) (random (format "%S" seed))))
 (glx-defopcode 'quit #x120 '() (lambda (modes) 'glx-quit))
-(glx-def-store saveundo #x125 () (progn (glx-save-undo) glx-0))
-(glx-def-store restoreundo #x126 () (glx-restore-undo))
+(glx-defopcode 'saveundo #x125 '(store) (lambda (modes store)
+                                          (glx-save-undo store)
+                                          (funcall (first store) (second store) glx-0 4)))
+(glx-defopcode 'restoreundo #x126 '(store) (lambda (modes store)
+                                             (unless (glx-restore-undo)
+                                               (funcall (first store) (second store) glx-1 4))))
 
 (glx-def-store glk #x130 (l1 l2) (glx-glk-call (glx-32->int l1) (glx-32->int l2)))
 

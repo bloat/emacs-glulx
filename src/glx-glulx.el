@@ -207,20 +207,21 @@ The value is truncated to the given number of bytes."
       (dotimes (n counti)
         (aset *glx-memory* (+ targeti (- (- counti 1) n)) (aref *glx-memory* (+ sourcei (- (- counti 1) n))))))))
 
-(defun glx-save-undo ()
+(defun glx-save-undo (store)
   (setq *glx-undo*
         (list (copy-sequence *glx-memory*)
               (copy-tree *glx-stack*)
-              *glx-pc*)))
+              *glx-pc*
+              store)))
 
 (defun glx-restore-undo ()
-  (if (not *glx-undo*)
-      glx-1
+  (when *glx-undo*
     (setq *glx-memory* (first *glx-undo*))
     (setq *glx-stack* (second *glx-undo*))
     (setq *glx-pc* (third *glx-undo*))
-    (setq *glx-undo* nil)
-    glx-0))
+    (let ((undo-store (fourth *glx-undo*)))
+      (funcall (first undo-store) (second undo-store) (glx-32 -1) 4))
+    t))
 
 (defun glx-gen-inst-function (name)
   (intern (concat "glx-instruction-" (symbol-name name))))
