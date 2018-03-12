@@ -221,6 +221,7 @@ The value is truncated to the given number of bytes."
     (setq *glx-pc* (third *glx-undo*))
     (let ((undo-store (fourth *glx-undo*)))
       (funcall (first undo-store) (second undo-store) (glx-32 -1) 4))
+    (setq *glx-undo* nil)
     t))
 
 (defun glx-gen-inst-function (name)
