@@ -210,35 +210,35 @@
 (ert-deftest store-a-string-to-memory ()
   "Store a string to memory"
   :tags '(glulx)
-  (let ((*glx-memory* [0 0 0 0 0 0]))
+  (let ((*glx-memory* (vector 0 0 0 0 0 0)))
     (glx-memory-set-string glx-1 "Glulx")
     (should (equal *glx-memory* [0 71 108 117 108 120]))))
 
 (ert-deftest zero-memory ()
   "Write zeros to a segment of memory"
   :tags '(glulx)
-  (let ((*glx-memory* [1 1 1 1 1]))
+  (let ((*glx-memory* (vector 1 1 1 1 1)))
     (glx-memory-mzero glx-3 glx-1)
     (should (equal *glx-memory* [1 0 0 0 1]))))
 
 (ert-deftest copy-memory-non-overlapping ()
   "Copy memory, non overlapping"
   :tags '(glulx)
-  (let ((*glx-memory* [1 2 3 4 5 6 7 8]))
+  (let ((*glx-memory* (vector 1 2 3 4 5 6 7 8)))
     (glx-memory-mcopy glx-3 glx-1 glx-5)
     (should (equal *glx-memory* [1 2 3 4 5 2 3 4]))))
 
 (ert-deftest copy-memory-forward-overlapping ()
   "Copy memory, forward overlap"
   :tags '(glulx)
-  (let ((*glx-memory* [1 2 3 4 5 6 7 8]))
+  (let ((*glx-memory* (vector 1 2 3 4 5 6 7 8)))
     (glx-memory-mcopy glx-4 glx-1 glx-3)
     (should (equal *glx-memory* [1 2 3 2 3 4 5 8]))))
 
 (ert-deftest copy-memory-backward-overlapping ()
   "Copy memory, backward overlap"
   :tags '(glulx)
-  (let ((*glx-memory* [1 2 3 4 5 6 7 8]))
+  (let ((*glx-memory* (vector 1 2 3 4 5 6 7 8)))
     (glx-memory-mcopy glx-4 glx-4 glx-2)
     (should (equal *glx-memory* [1 2 5 6 7 8 7 8]))))
 
@@ -249,34 +249,39 @@
         (*glx-stack* (list (list nil (list (cons glx-0 glx-0)))))
         (*glx-pc* (list 0 3 4 5))
         (*glx-undo* nil))
-    (glx-save-undo)
+    (glx-save-undo 'store-function)
     (should (equal *glx-undo* '([0 0 0 0]
                                 ((nil (((0 0 0 0) 0 0 0 0))))
-                                (0 3 4 5))))
+                                (0 3 4 5)
+                                store-function)))
     (glx-value-push glx-4)
     (glx-memory-set glx-0 glx-5 4)
     (should (equal *glx-undo* '([0 0 0 0]
                                 ((nil (((0 0 0 0) 0 0 0 0))))
-                                (0 3 4 5))))))
+                                (0 3 4 5)
+                                store-function)))))
 
 (ert-deftest can-not-restore-undo-with-no-undo-saved ()
   "Can't restore undo with no undo saved"
   :tags '(glulx)
   (let ((*glx-undo* nil))
-    (should (equal (glx-restore-undo) glx-1))))
+    (should (not (glx-restore-undo)))))
 
 (ert-deftest restore-undo ()
   "Restore undo"
   :tags '(glulx)
-  (let ((*glx-undo* (list (make-vector 4 0)
-                          (list (list nil (list (cons glx-0 glx-0))))
-                          (list 0 3 4 5)))
-        (*glx-memory* nil)
-        (*glx-stack* nil)
-        (*glx-pc* nil))
-    (should (equal (glx-restore-undo) glx-0))
-    (should (equal *glx-undo* nil))
-    (should (equal *glx-memory* [0 0 0 0]))
-    (should (equal *glx-stack* '((nil (((0 0 0 0) 0 0 0 0))))))
-    (should (equal *glx-pc* '(0 3 4 5)))))
+  (let (was-called)
+    (let ((*glx-undo* (list (make-vector 4 0)
+                            (list (list nil (list (cons glx-0 glx-0))))
+                            (list 0 3 4 5)
+                            (list (lambda (&rest x) (setq was-called x)) 'store-arg)))
+          (*glx-memory* nil)
+          (*glx-stack* nil)
+          (*glx-pc* nil))
+      (should (equal (glx-restore-undo) t))
+      (should (equal *glx-undo* nil))
+      (should (equal *glx-memory* [0 0 0 0]))
+      (should (equal *glx-stack* '((nil (((0 0 0 0) 0 0 0 0))))))
+      (should (equal *glx-pc* '(0 3 4 5)))
+      (should (equal was-called (list 'store-arg (glx-32 -1) 4))))))
 

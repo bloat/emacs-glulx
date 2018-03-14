@@ -440,7 +440,7 @@
     (glx-instruction-gestalt nil glx-1 glx-0 (list #'glx-store-mem glx-1)))
   (with-glx-memory (0 0 0 0 0) (0 0 0 0 1)
     (glx-instruction-gestalt nil glx-2 glx-0 (list #'glx-store-mem glx-1)))
-  (with-glx-memory (0 0 0 0 1) (0 0 0 0 0)
+  (with-glx-memory (0 0 0 0 0) (0 0 0 0 1)
     (glx-instruction-gestalt nil glx-3 glx-0 (list #'glx-store-mem glx-1)))
   (with-glx-memory (0 0 0 0 0) (0 0 0 0 1)
     (glx-instruction-gestalt nil glx-4 glx-0 (list #'glx-store-mem glx-1)))
