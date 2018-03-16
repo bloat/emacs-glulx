@@ -15,7 +15,7 @@
   "The current stream for reading and writing.
 Used by routines which do not specify a stream")
 
-(defopaque stream buffer type read-count write-count storage face unicode)
+(defopaque stream buffer type read-count write-count storage face unicode mode)
 
 (defun glki-process-string-for-insertion (stream s)
   (if (eq (glki-opq-stream-get-type stream) 'glki-memory-stream)
@@ -84,6 +84,8 @@ Used by routines which do not specify a stream")
     (glki-opq-stream-set-write-count stream 0)
     (glki-opq-stream-set-storage stream buf)
     (glki-opq-stream-set-unicode stream unicode)
+    (glki-opq-stream-set-mode stream fmode)
+    (glki-opq-stream-set-rock stream rock)
     stream))
 
 (defun glk-stream-open-memory (buf buflen fmode rock stream-id)
@@ -91,6 +93,30 @@ Used by routines which do not specify a stream")
 
 (defun glk-stream-open-memory-uni (buf buflen fmode rock stream-id)
   (glki-stream-open-memory buf buflen fmode rock stream-id t))
+
+(defun glki-stream-open-file (fileref fmode rock stream-id unicode)
+  (let ((stream (glki-opq-stream-create stream-id))
+        (filename (glki-opq-fileref-get-filename fileref))
+        (find-file-hook nil))
+    (glki-opq-stream-set-buffer stream
+                                (cond ((and (eq 'glk-filemode-read fmode) (not (file-exists-p filename)))
+                                       (signal 'glk-error (list "Can't read from a non-existant file" filename)))
+                                      ((eq 'glk-filemode-write fmode) (generate-new-buffer "*glk*"))
+                                      ((eq 'glk-filemode-read fmode) (find-file-noselect filename t))))
+    (glki-opq-stream-set-type stream 'glki-file-stream)
+    (glki-opq-stream-set-read-count stream 0)
+    (glki-opq-stream-set-write-count stream 0)
+    (glki-opq-stream-set-storage stream fileref)
+    (glki-opq-stream-set-unicode stream unicode)
+    (glki-opq-stream-set-mode stream fmode)
+    (glki-opq-stream-set-rock stream rock)
+    stream))
+
+(defun glk-stream-open-file (fileref fmode rock stream-id)
+  (glki-stream-open-file fileref fmode rock stream-id nil))
+
+(defun glk-stream-open-file-uni (fileref fmode rock stream-id)
+  (glki-stream-open-file fileref fmode rock stream-id t))
 
 (defun glki-stream-dispose (stream)
   (if (glki-opq-stream-get-buffer stream)

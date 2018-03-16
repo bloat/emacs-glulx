@@ -14,8 +14,11 @@
                                     (progn ,@body)
                                   (glki-dispose-window 'window)
                                   (glki-stream-dispose 'a-stream)
+                                  (glk-fileref-destroy 'existing)
+                                  (glk-fileref-destroy 'non-existing)
                                   (should-not glki-opq-window)
                                   (should-not glki-opq-stream)
+                                  (should-not glki-opq-fileref)
                                   (should-not (remove-if #'(lambda (b) (not (string-match "\\*glk\\*" (buffer-name b)))) (buffer-list))))))
 
   (ert-deftest glki-create-window-stream-should-create-a-window-stream ()
@@ -196,4 +199,36 @@
      (glk-stream-set-current 'a-stream)
      (glk-set-style 'glk-header-face)
      (glk-put-string-stream 'a-stream "You are in a room")
-     (should (equal (get-text-property 5 'face (get-buffer "*glk*")) 'glk-header-face)))))
+     (should (equal (get-text-property 5 'face (get-buffer "*glk*")) 'glk-header-face))))
+
+  (ert-deftest glk-stream-open-file-read-mode-should-check-if-file-exists ()
+    "Open read mode file checks for existence"
+    :tags '(glk stream)
+    (clean-up-and-check
+     (let ((existing-file-name (make-temp-file "glkert"))
+           (non-existing-file-name (make-temp-name "glkert")))
+       (glk-fileref-create-by-name 'glk-filemode-read existing-file-name 0 'existing)
+       (glk-fileref-create-by-name 'glk-filemode-read non-existing-file-name 0 'non-existing)
+
+       (should-error (glk-stream-open-file 'non-existing 'glk-filemode-read 0 'a-stream) :type 'glk-error)
+       (should-error (glk-stream-open-file-uni 'non-existing 'glk-filemode-read 0 'a-stream) :type 'glk-error))))
+
+  (ert-deftest glk-stream-open-file-read-mode-should-load-file-into-buffer ()
+    "Open read mode loads file"
+    :tags '(glk stream)
+    (clean-up-and-check
+     (let ((file (make-temp-name "glkert")))
+       (with-temp-file file (insert "glk test file"))
+       (glk-fileref-create-by-name 'glk-filemode-read file 0 'existing)
+       (glk-stream-open-file 'existing 'glk-filemode-read 0 'a-stream)
+       (with-current-buffer (glki-opq-stream-get-buffer 'a-stream)
+         (should (string= (buffer-string) "glk test file"))))))
+
+  (ert-deftest glk-stream-open-file-write-mode-should-create-an-empty-buffer ()
+    "glk-stream-open-file write mode should create an empty buffer"
+    :tags '(glk stream)
+    (clean-up-and-check
+     (glk-fileref-create-by-name 'glk-filemode-write (make-temp-name "glk") 0 'existing)
+     (glk-stream-open-file 'existing 'glk-filemode-write 0 'a-stream)
+     (should (equal (glki-opq-stream-get-buffer 'a-stream) (get-buffer "*glk*")))
+     (should (equal (glki-opq-stream-get-type 'a-stream) 'glki-file-stream)))))

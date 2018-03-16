@@ -28,6 +28,7 @@
   (setq glk-frame nil)
   (glki-kill-all-streams)
   (glki-kill-all-windows)
+  (glki-kill-all-filerefs)
   (setq glk-root-window nil)
   (setq glk-event-queue nil)
   (setq glk-select-waiting nil)

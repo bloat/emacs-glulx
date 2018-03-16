@@ -103,9 +103,8 @@
 (ert-deftest storing-an-event-into-glulx-memory ()
   "storing an event into glulx memory"
   :tags '(glk)
-  :expected-result :failed
   (let ((*glx-memory* (make-vector 33 0)))
-    (glx-glk-store-event `(glk-evtype-lineinput \(0\ 0\ 0\ 1\) 16 0 ,(glx-32 16) "examine building") glx-1)
+    (glx-glk-store-event `(glk-evtype-lineinput \(0\ 0\ 0\ 1\) 16 0 ,(glx-32 17) "examine building") glx-1)
     (should (equal *glx-memory*
                    [0 0 0 0 3
                       0 0 0 1

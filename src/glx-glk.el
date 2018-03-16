@@ -20,6 +20,27 @@
 
 (defconst *glx-glk-functions* (make-hash-table))
 
+;; Each glk function in the hash table consists of a list of
+;; a) the elisp function to call
+;; b) the instructions for marshalling the arguments and return values.
+;;
+;; A marshalling instruction is a list, the first item is either a
+;; function or another list.
+;;
+;; If the first item is a function then we are marshalling one of the
+;; input arguments to the glk function. Using the positions given by
+;; the other items in the marshalling instruction we select items from
+;; the arguments to the glk call, and the marshalling function is
+;; called one those items, to create one input argument for the glk
+;; function.
+;;
+;; If the first item is a list then we are marshalling some output
+;; from the glk function. The first item in the list is a list of
+;; positions from the input arguments. The second item in the list is
+;; a list of positions from the results. The values specified by these
+;; lists are concatenated and passed to the function which is the
+;; third item in the marshalling instruction.
+
 (puthash #x04 (list #'glk-gestalt
                     (list #'glx-32->glk-gestalt-selector 0)
                     (list #'glx-32->int 1)) *glx-glk-functions*)
@@ -59,10 +80,16 @@
                     (list #'glx-32->glk-opq 0)
                     (list (list 1) (list 1) #'glx-store-glk-result)) *glx-glk-functions*)
 
+(puthash #x42 (list #'glk-stream-open-file
+                    (list #'glx-32->glk-opq 0)
+                    (list #'glx-32->glk-filemode 1)
+                    (list #'glx-32->int 2)
+                    (list #'glx-get-next-glk-id)) *glx-glk-functions*)
+
 (puthash #x43 (list #'glk-stream-open-memory
                     (list #'identity 0)
                     (list #'glx-32->int 1)
-                    (list #'glx-32->int 2)
+                    (list #'glx-32->glk-filemode 2)
                     (list #'glx-32->int 3)
                     (list #'glx-get-next-glk-id)) *glx-glk-functions*)
 
@@ -75,9 +102,17 @@
 
 (puthash #x48 (list #'glk-stream-get-current) *glx-glk-functions*)
 
+(puthash #x60 (list #'glk-fileref-create-temp
+                    (list #'glx-32->int 0)
+                    (list #'glx-32->int 1)
+                    (list #'glx-get-next-glk-id)) *glx-glk-functions*)
+
 (puthash #x64 (list #'glk-fileref-iterate
                     (list #'glx-32->glk-opq 0)
                     (list (list 1) (list 1) #'glx-store-glk-result)) *glx-glk-functions*)
+
+(puthash #x67 (list #'glk-fileref-does-file-exist
+                    (list #'glx-32->glk-opq 0)) *glx-glk-functions*)
 
 (puthash #x80 (list #'glk-put-char
                     (list (lambda (c) (nth 3 (glx-32-get-bytes-as-list-big-endian c))) 0)) *glx-glk-functions*)
@@ -125,10 +160,16 @@
 (puthash #x12a (list #'glk-put-string
                      (list #'glx-glk-load-unicode-string-buffer 0 1)) *glx-glk-functions*)
 
+(puthash #x138 (list #'glk-stream-open-file-uni
+                     (list #'glx-32->glk-opq 0)
+                     (list #'glx-32->glk-filemode 1)
+                     (list #'glx-32->int 2)
+                     (list #'glx-get-next-glk-id)) *glx-glk-functions*)
+
 (puthash #x139 (list #'glk-stream-open-memory-uni
                      (list #'identity 0)
                      (list #'glx-32->int 1)
-                     (list #'glx-32->int 2)
+                     (list #'glx-32->filemode 2)
                      (list #'glx-32->int 3)
                      (list #'glx-get-next-glk-id)) *glx-glk-functions*)
 
@@ -166,7 +207,7 @@ be ARG-COUNT args on the stack."
 
 (defun glx-handle-glk-results (results stores)
   "Each store in STORES consists of a function, list of positions,
-a list of arguments from the glk call and a function.
+and a list of arguments from the glk call.
 The specified results (given by the positions) from the RESULTS list, 
 and the values picked from the original glk call arguments, are all
 passed to the function for processing. The first
@@ -218,6 +259,13 @@ entire glk call."
     (4 'glk-subheader-face)
     (t 'glk-normal-face)))
 
+(defun glx-32->glk-filemode (value)
+  (case (glx-32->int value)
+    (1 'glk-filemode-write)
+    (2 'glk-filemode-read)
+    (3 'glk-filemode-readwrite)
+    (5 'glk-filemode-writeappend)))
+
 (defun glx-32->glk-gestalt-selector (value)
   (case (glx-32->int value)
     (0 'glk-gestalt-version)))
@@ -232,6 +280,7 @@ entire glk call."
         ((symbolp result) (glx-glk-opq->glx-32 result))
         ((numberp result) (glx-32 result))
         ((listp result) result)
+        ((and (booleanp result) result) glx-1)
         (t (signal 'glx-glk-error (list "Unknown glk result type:" result)))))
 
 (defun glx-get-glk-result (result)
@@ -283,7 +332,6 @@ If the memory address is 0 then all results are discarded."
   (cond
    ((eq event-type 'glk-evtype-none) 0)
    ((eq event-type 'glk-evtype-lineinput) 3)))
-
 
 (defun glx-glk-store-event (event memptr)
   (glx-log "storing event to location: %S - %S" memptr event)

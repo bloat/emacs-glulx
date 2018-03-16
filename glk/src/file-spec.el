@@ -30,6 +30,15 @@
       (advice-remove 'read-from-minibuffer 'test-read-from-minibuffer)
       (glki-opq-fileref-dispose 'fileref))))
 
+(ert-deftest glk-fileref-create-temp-should-create-a-fileref ()
+  "glk-fileref-create-temp should create a fileref"
+  :tags '(glk file)
+  (unwind-protect
+      (progn
+        (glk-fileref-create-temp 0 0 'fileref)
+        (should (string-prefix-p "glk" (glki-get-filename 'fileref))))
+    (glki-opq-fileref-dispose 'fileref)))
+
 (ert-deftest glk-fileref-destroy-should-remove-the-fileref ()
   "glk-fileref-destroy should remove the fileref"
   :tags '(glk file)
