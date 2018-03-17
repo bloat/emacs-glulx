@@ -762,3 +762,30 @@
       (glx-value-push `(catch ,glx-1)) ; The catch token
       (glx-value-push glx-3) ; some other value to be discarded as we unwind.
       (glx-instruction-throw nil glx-5 glx-1))))
+
+(ert-deftest save-should-write-game-state-to-buffer ()
+  "save should write game state to buffer"
+  :tags '(instructions)
+  (with-glx-memory (0 0 0 0) (0 0 0 0)
+    (let ((*glx-stack* (list (list nil (list (cons glx-0 glx-0)))))
+          (*glx-pc* (list 0 3 4 5)))
+      (with-temp-buffer
+        (glx-save-game (current-buffer) 'dest-type 'dest-addr)
+        (goto-char (point-min))
+        (let ((saved-game (read (current-buffer))))
+          (should (equal saved-game (list (make-vector 4 0)
+                                          (list (list 'dest-type 'dest-addr (list 0 3 4 5)) (list nil (list (cons glx-0 glx-0)))))))))
+      ;; call stub pushed during save should not be on the stack afterwards.
+      (should (equal *glx-stack* (list (list nil (list (cons glx-0 glx-0)))))))))
+
+(ert-deftest restore-game-should-load-from-buffer ()
+  "restore game should load from buffer"
+  :tags '(instructions)
+  (unwind-protect
+      (with-temp-buffer
+        (insert "([0 1 2 3 0 0 0 0] ((1 (0 0 0 4) (7 8 9 10)) (nil (((0 0 0 0) 0 0 0 0)))))")
+        (put 'stream 'buffer (current-buffer))
+        (glx-restore-game 'stream)
+        (should (equal *glx-memory* [0 1 2 3 255 255 255 255]))
+        (should (equal *glx-stack* (list (list nil (list (cons glx-0 glx-0)))))))
+    (put 'fileref 'buffer nil)))

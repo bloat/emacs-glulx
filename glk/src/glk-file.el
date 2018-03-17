@@ -28,6 +28,9 @@
 (defun glk-fileref-destroy (fref)
   (glki-opq-fileref-dispose fref))
 
+(defun glk-fileref-delete-file (fileref)
+  (delete-file (glki-get-filename fileref)))
+
 (defun glk-fileref-does-file-exist (fileref)
   (file-exists-p (glki-get-filename fileref)))
 

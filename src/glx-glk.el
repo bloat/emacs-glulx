@@ -95,7 +95,7 @@
 
 (puthash #x44 (list #'glk-stream-close
                     (list #'glx-32->glk-opq 0)
-                    (list (list 1) (list 1) #'glx-glk-store-closed-memory-stream)) *glx-glk-functions*)
+                    (list (list 1) (list 1) #'glx-glk-store-closed-stream)) *glx-glk-functions*)
 
 (puthash #x47 (list #'glk-stream-set-current
                     (list #'glx-32->glk-opq 0)) *glx-glk-functions*)
@@ -107,9 +107,15 @@
                     (list #'glx-32->int 1)
                     (list #'glx-get-next-glk-id)) *glx-glk-functions*)
 
+(puthash #x63 (list #'glk-fileref-destroy
+                    (list #'glx-32->glk-opq 0)) *glx-glk-functions*)
+
 (puthash #x64 (list #'glk-fileref-iterate
                     (list #'glx-32->glk-opq 0)
                     (list (list 1) (list 1) #'glx-store-glk-result)) *glx-glk-functions*)
+
+(puthash #x66 (list #'glk-fileref-delete-file
+                    (list #'glx-32->glk-opq 0)) *glx-glk-functions*)
 
 (puthash #x67 (list #'glk-fileref-does-file-exist
                     (list #'glx-32->glk-opq 0)) *glx-glk-functions*)
@@ -223,9 +229,10 @@ entire glk call."
 
       (glx-log "Storing glk result %S" store-function-args)
       (apply store-function store-function-args)))
-  
-  (glx-log "Last glk return value %S" (glx-glk-result->32 results))
-  (glx-get-glk-result results))
+
+  (let ((glk-call-result (glx-get-glk-result results)))
+    (glx-log "Last glk return value %S" glk-call-result)
+    glk-call-result))
 
 (defun glx-32->glk-opq (value)
   (if (glx-0-p value) nil (intern (prin1-to-string value))))
@@ -277,10 +284,10 @@ entire glk call."
 
 (defun glx-glk-result->32 (result)
   (cond ((null result) glx-0)
+        ((and (booleanp result) result) glx-1)
         ((symbolp result) (glx-glk-opq->glx-32 result))
         ((numberp result) (glx-32 result))
         ((listp result) result)
-        ((and (booleanp result) result) glx-1)
         (t (signal 'glx-glk-error (list "Unknown glk result type:" result)))))
 
 (defun glx-get-glk-result (result)
@@ -346,14 +353,17 @@ If the memory address is 0 then all results are discarded."
 (defun glx-memory-set-unicode-string (memptr string)
   (mapcar (lambda (c) (glx-memory-set memptr (glx-32 c) 4) (setq memptr (glx-+ glx-4 memptr))) string))
 
-(defun glx-glk-store-closed-memory-stream (stream memptr)
-  (glx-log "storing stream to location: %S - %S" memptr stream)
-  (glx-store-glk-structure memptr
-                           (list (glx-32 (first stream))
-                                 (glx-32 (second stream))))
-  (if (third stream)
-      (glx-memory-set-unicode-string (fourth stream) (fifth stream))
-    (glx-memory-set-string (fourth stream) (fifth stream))))
+(defun glx-glk-store-closed-stream (stream memptr)
+  "Ignores STREAM unless it is a memory stream. Otherwise stores 
+the read count and the write count and the data from STREAM."
+  (when (first stream) 
+    (glx-log "storing stream to location: %S - %S" memptr stream)
+    (glx-store-glk-structure memptr
+                             (list (glx-32 (second stream))
+                                   (glx-32 (third stream))))
+    (if (fourth stream)
+        (glx-memory-set-unicode-string (fifth stream) (sixth stream))
+      (glx-memory-set-string (fifth stream) (sixth stream)))))
 
 (defun glx-glk-load-string-buffer (memptr buflen)
   (let (chars)

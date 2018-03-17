@@ -170,15 +170,15 @@
     :tags '(glk stream)
     (clean-up-and-check
      (glk-stream-open-memory 'buffer 20 'write 'rock 'a-stream)
-     (should (equal (glk-stream-close 'a-stream) '(nil (0 0 nil buffer ""))))))
+     (should (equal (glk-stream-close 'a-stream) '(nil (t 0 0 nil buffer ""))))))
 
-  (ert-deftest a-stream-returns-its-correct-write-count-and-its-contents ()
+  (ert-deftest a-memory-stream-returns-its-correct-write-count-and-its-contents ()
     "a stream returns its correct write-count and its contents"
     :tags '(glk stream)
     (clean-up-and-check
      (glk-stream-open-memory 'buffer 20 'write 'rock 'a-stream)
      (glk-put-string-stream 'a-stream "hello")
-     (should (equal (glk-stream-close 'a-stream) '(nil (0 5 nil buffer "hello"))))))
+     (should (equal (glk-stream-close 'a-stream) '(nil (t 0 5 nil buffer "hello"))))))
 
   ;; TODO this uses the current stream for the face, when it should use the passed in stream
   (ert-deftest setting-a-face-on-a-stream ()
@@ -231,4 +231,12 @@
      (glk-fileref-create-by-name 'glk-filemode-write (make-temp-name "glk") 0 'existing)
      (glk-stream-open-file 'existing 'glk-filemode-write 0 'a-stream)
      (should (equal (glki-opq-stream-get-buffer 'a-stream) (get-buffer "*glk*")))
-     (should (equal (glki-opq-stream-get-type 'a-stream) 'glki-file-stream)))))
+     (should (equal (glki-opq-stream-get-type 'a-stream) 'glki-file-stream))))
+
+  (ert-deftest a-file-stream-returns-nothing ()
+    "a file stream returns nothing"
+    :tags '(glk stream)
+    (clean-up-and-check
+     (glk-fileref-create-by-name 'glk-filemode-write (make-temp-name "glk") 0 'existing)
+     (glk-stream-open-file 'existing 'glk-filemode-write 0 'a-stream)
+     (should (equal (glk-stream-close 'a-stream) (list nil (list nil)))))))

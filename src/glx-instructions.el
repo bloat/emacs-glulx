@@ -283,6 +283,39 @@
 (glx-def-store random #x110 (l1) (glx-32-rand l1))
 (glx-defopcode 'setrandom #x111 '(load) (lambda (modes seed) (random (format "%S" seed))))
 (glx-defopcode 'quit #x120 '() (lambda (modes) 'glx-quit))
+
+(defun glx-save-game (buffer dest-type dest-addr)
+  (glx-push-call-stub dest-type dest-addr)
+  (with-current-buffer buffer
+    (erase-buffer)
+    (print (list *glx-memory*
+                 *glx-stack*) buffer))
+  (glx-stack-pop))
+
+(defun glx-instruction-save (modes stream store)
+  (multiple-value-bind (dest-type dest-addr)
+      (glx-get-destinations store)
+    (funcall (first store)
+             (second store)
+             (if (glx-save-game (glki-opq-stream-get-buffer (glx-32->glk-opq stream)) dest-type dest-addr) glx-0 glx-1)
+             4)))
+
+(glx-defopcode 'save #x123 '(load store) #'glx-instruction-save)
+
+(defun glx-restore-game (stream)
+  (multiple-value-bind (memory stack)
+      (with-current-buffer (glki-opq-stream-get-buffer (glx-32->glk-opq stream))
+        (goto-char (point-min))
+        (read (current-buffer)))
+    (setq *glx-memory* memory)
+    (setq *glx-stack* stack)
+    (let ((call-stub (glx-stack-pop)))
+      (setq *glx-pc* (glx-call-stub-pc call-stub))
+      (funcall (glx-dest-type->store-fun (glx-call-stub-dest-type call-stub)) (glx-call-stub-dest-addr call-stub) (glx-32 -1)))))
+
+(glx-defopcode 'restore #x124 '(load store) (lambda (modes stream store)
+                                              (unless (glx-restore-game stream)
+                                                (funcall (first store) (second store) glx-0 4))))
 (glx-defopcode 'saveundo #x125 '(store) (lambda (modes store)
                                           (glx-save-undo store)
                                           (funcall (first store) (second store) glx-0 4)))
