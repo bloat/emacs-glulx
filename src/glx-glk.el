@@ -175,7 +175,7 @@
 (puthash #x139 (list #'glk-stream-open-memory-uni
                      (list #'identity 0)
                      (list #'glx-32->int 1)
-                     (list #'glx-32->filemode 2)
+                     (list #'glx-32->glk-filemode 2)
                      (list #'glx-32->int 3)
                      (list #'glx-get-next-glk-id)) *glx-glk-functions*)
 
