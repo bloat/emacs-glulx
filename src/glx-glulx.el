@@ -21,7 +21,7 @@
 (defvar *glx-glk-id-gen* 0 "Generates glk ids for new glk opaque objects")
 (defvar *glx-store-event-memptr* nil "Where to store the glk event on re-entry")
 (defvar *glx-catch-token* glx-0 "An increasing number for catch tokens")
-
+(defvar *glx-protect* nil "The memory protection range")
 (defvar *glx-log-buffer* nil "A buffer for Glulx VM logging output")
 
 (defsubst glx-memory-ref (memptr-int)
@@ -214,9 +214,16 @@ The value is truncated to the given number of bytes."
               *glx-pc*
               store)))
 
+(defun glx-restore-memory-with-protect (incoming)
+  (if *glx-protect*
+      (let ((memptr (car *glx-protect*)))
+        (dotimes (n (cdr *glx-protect*) incoming)
+          (aset incoming (+ memptr n) (glx-memory-ref (+ memptr n)))))
+    incoming))
+
 (defun glx-restore-undo ()
   (when *glx-undo*
-    (setq *glx-memory* (first *glx-undo*))
+    (setq *glx-memory* (glx-restore-memory-with-protect (first *glx-undo*)))
     (setq *glx-stack* (second *glx-undo*))
     (setq *glx-pc* (third *glx-undo*))
     (let ((undo-store (fourth *glx-undo*)))

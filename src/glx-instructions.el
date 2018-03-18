@@ -283,6 +283,7 @@
 (glx-def-store random #x110 (l1) (glx-32-rand l1))
 (glx-defopcode 'setrandom #x111 '(load) (lambda (modes seed) (random (format "%S" seed))))
 (glx-defopcode 'quit #x120 '() (lambda (modes) 'glx-quit))
+(glx-def-store verify #x121 () glx-0)
 
 (defun glx-save-game (buffer dest-type dest-addr)
   (glx-push-call-stub dest-type dest-addr)
@@ -307,7 +308,7 @@
       (with-current-buffer (glki-opq-stream-get-buffer (glx-32->glk-opq stream))
         (goto-char (point-min))
         (read (current-buffer)))
-    (setq *glx-memory* memory)
+    (setq *glx-memory* (glx-restore-memory-with-protect memory))
     (setq *glx-stack* stack)
     (let ((call-stub (glx-stack-pop)))
       (setq *glx-pc* (glx-call-stub-pc call-stub))
@@ -322,7 +323,10 @@
 (glx-defopcode 'restoreundo #x126 '(store) (lambda (modes store)
                                              (unless (glx-restore-undo)
                                                (funcall (first store) (second store) glx-1 4))))
-
+(glx-defopcode 'protect #x127 '(load load) (lambda (modes start length)
+                                             (if (and (glx-0-p start) (glx-0-p length))
+                                                 (setq *glx-protect* nil)
+                                               (setq *glx-protect* (cons (glx-32->int start) (glx-32->int length))))))
 (glx-def-store glk #x130 (l1 l2) (glx-glk-call (glx-32->int l1) (glx-32->int l2)))
 
 (glx-def-store getstringtbl #x140 () *glx-string-table*)

@@ -285,3 +285,22 @@
       (should (equal *glx-pc* '(0 3 4 5)))
       (should (equal was-called (list 'store-arg (glx-32 -1) 4))))))
 
+(ert-deftest restore-undo-with-protect ()
+  "Restore undo"
+  :tags '(glulx)
+  (let (was-called)
+    (let ((*glx-undo* (list (vector 1 2 3 4 5 6 7 8)
+                            (list (list nil (list (cons glx-0 glx-0))))
+                            (list 0 3 4 5)
+                            (list (lambda (&rest x) (setq was-called x)) 'store-arg)))
+          (*glx-memory* (vector 11 12 13 14 15 16 17 18))
+          (*glx-stack* nil)
+          (*glx-pc* nil)
+          (*glx-protect* (cons 2 4)))
+      (should (equal (glx-restore-undo) t))
+      (should (equal *glx-undo* nil))
+      (should (equal *glx-memory* [1 2 13 14 15 16 7 8]))
+      (should (equal *glx-stack* '((nil (((0 0 0 0) 0 0 0 0))))))
+      (should (equal *glx-pc* '(0 3 4 5)))
+      (should (equal was-called (list 'store-arg (glx-32 -1) 4))))))
+

@@ -782,10 +782,25 @@
   "restore game should load from buffer"
   :tags '(instructions)
   (unwind-protect
-      (with-temp-buffer
-        (insert "([0 1 2 3 0 0 0 0] ((1 (0 0 0 4) (7 8 9 10)) (nil (((0 0 0 0) 0 0 0 0)))))")
-        (put 'stream 'buffer (current-buffer))
-        (glx-restore-game 'stream)
-        (should (equal *glx-memory* [0 1 2 3 255 255 255 255]))
-        (should (equal *glx-stack* (list (list nil (list (cons glx-0 glx-0)))))))
+      (let ((*glx-memory* (make-vector 8 0)))
+        (with-temp-buffer
+          (insert "([0 1 2 3 0 0 0 0] ((1 (0 0 0 4) (7 8 9 10)) (nil (((0 0 0 0) 0 0 0 0)))))")
+          (put 'stream 'buffer (current-buffer))
+          (glx-restore-game 'stream)
+          (should (equal *glx-memory* [0 1 2 3 255 255 255 255]))
+          (should (equal *glx-stack* (list (list nil (list (cons glx-0 glx-0))))))))
+    (put 'fileref 'buffer nil)))
+
+(ert-deftest restore-game-should-load-from-buffer-and-not-overwrite-protected-memory ()
+  "restore game should load from buffer and use protected memory range"
+  :tags '(instructions)
+  (unwind-protect
+      (let ((*glx-protect* (cons 1 2))
+            (*glx-memory* (vector 4 5 6 7 0 0 0 0)))
+        (with-temp-buffer
+          (insert "([0 1 2 3 0 0 0 0] ((1 (0 0 0 4) (7 8 9 10)) (nil (((0 0 0 0) 0 0 0 0)))))")
+          (put 'stream 'buffer (current-buffer))
+          (glx-restore-game 'stream)
+          (should (equal *glx-memory* [0 5 6 3 255 255 255 255]))
+          (should (equal *glx-stack* (list (list nil (list (cons glx-0 glx-0))))))))
     (put 'fileref 'buffer nil)))
