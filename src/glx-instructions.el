@@ -274,6 +274,7 @@
                                            (glx-0)))
 
 (glx-def-store getmemsize #x102 () (glx-32 (length *glx-memory*)))
+(glx-def-store setmemsize #x103 (l1) (if (glx-set-memory-size (glx-32->int l1)) glx-0 glx-1))
 
 (defun glx-instruction-jumpabs (modes dest)
   (setq *glx-pc* dest)

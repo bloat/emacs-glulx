@@ -304,3 +304,38 @@
       (should (equal *glx-pc* '(0 3 4 5)))
       (should (equal was-called (list 'store-arg (glx-32 -1) 4))))))
 
+(ert-deftest can-expand-mem-and-fill-with-zeros ()
+  "Expand memory"
+  :tags '(glulx)
+  (let ((header [#x47 #x6c #x75 #x6c
+                      0 0 0 20
+                      0 0 1 0
+                      0 0 2 0
+                      0 0 3 0]))
+    (let ((*glx-memory* (vconcat header (make-vector 748 0))))
+      (glx-set-memory-size 1024)
+      (should (equal *glx-memory* (vconcat header (make-vector 1004 0)))))))
+
+(ert-deftest can-shrink-mem ()
+  "Shrink memory"
+  :tags '(glulx)
+  (let ((header [#x47 #x6c #x75 #x6c
+                      0 0 0 20
+                      0 0 1 0
+                      0 0 2 0
+                      0 0 3 0]))
+    (let ((*glx-memory* (vconcat header (make-vector 1004 0))))
+      (glx-set-memory-size 768)
+      (should (equal *glx-memory* (vconcat header (make-vector 748 0)))))))
+
+(ert-deftest cannot-shrink-mem-below-original-size ()
+  "Can't shrink memory below original size"
+  :tags '(glulx)
+  (let ((header [#x47 #x6c #x75 #x6c
+                      0 0 0 20
+                      0 0 1 0
+                      0 0 2 0
+                      0 0 3 0]))
+    (let ((*glx-memory* (vconcat header (make-vector 1004 0))))
+      (should (not (glx-set-memory-size 512)))
+      (should (equal *glx-memory* (vconcat header (make-vector 1004 0)))))))

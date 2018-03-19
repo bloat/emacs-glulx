@@ -57,6 +57,7 @@
   (setq *glx-unexpected-exit* t)
   (setq *glx-log-buffer* (get-buffer-create "*glx-log*"))
   (setq *glx-undo* nil)
+  (setq *glx-protect* nil)
   (setq *glx-iosys* (list (lambda (c)) glx-0 glx-0))
   
   (setq glk-event-reentry-function #'glx-glk-event-callback)
@@ -85,6 +86,7 @@
     (setq *glx-log-buffer* nil)
     (setq *glx-catch-token* glx-0)
     (setq *glx-undo* nil)
+    (setq *glx-protect* nil)
     (message "glulx finished")))
 
 (provide 'glx-load)

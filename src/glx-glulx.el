@@ -216,9 +216,13 @@ The value is truncated to the given number of bytes."
 
 (defun glx-restore-memory-with-protect (incoming)
   (if *glx-protect*
-      (let ((memptr (car *glx-protect*)))
-        (dotimes (n (cdr *glx-protect*) incoming)
-          (aset incoming (+ memptr n) (glx-memory-ref (+ memptr n)))))
+      (dotimes (n (cdr *glx-protect*) incoming)
+        (let ((memptr (+ n (car *glx-protect*))))
+          (aset incoming
+                memptr
+                (if (< memptr (length *glx-memory*))
+                    (glx-memory-ref memptr)
+                  0))))
     incoming))
 
 (defun glx-restore-undo ()
@@ -248,5 +252,15 @@ The value is truncated to the given number of bytes."
   (if *glx-iosys*
       (third *glx-iosys*)
     (signal 'glx-glk-error (list "No iosys selected"))))
+
+(defun glx-set-memory-size (new-size)
+  (let ((current-size (length *glx-memory*)))
+    (if (>= new-size current-size)
+        (setq *glx-memory* (vconcat *glx-memory* (make-vector (- new-size current-size) 0)))
+      (unless (< new-size (glx-32->int (glx-memory-get-32 (glx-32 16))))
+        (let ((new-memory (make-vector new-size 0)))
+          (dotimes (n new-size)
+            (aset new-memory n (aref *glx-memory* n)))
+          (setq *glx-memory* new-memory))))))
 
 (provide 'glx-glulx)
