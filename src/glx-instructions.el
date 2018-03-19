@@ -285,6 +285,7 @@
 (glx-defopcode 'setrandom #x111 '(load) (lambda (modes seed) (random (format "%S" seed))))
 (glx-defopcode 'quit #x120 '() (lambda (modes) 'glx-quit))
 (glx-def-store verify #x121 () glx-0)
+(glx-defopcode 'restart #x122 '() (lambda (modes) (glx-restart)))
 
 (defun glx-save-game (buffer dest-type dest-addr)
   (glx-push-call-stub dest-type dest-addr)

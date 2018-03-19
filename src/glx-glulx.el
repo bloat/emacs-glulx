@@ -12,6 +12,7 @@
 (require 'glx-value)
 
 (defvar *glx-memory* nil "The Glulx VM memory vector")
+(defvar *glx-original-memory* nil "A copy of the original memory state, for restart")
 (defvar *glx-stack* nil "The Glulx VM stack")
 (defvar *glx-pc* nil "The Glulx VM program counter")
 (defvar *glx-string-table* nil "The Glulx VM string table")
@@ -262,5 +263,21 @@ The value is truncated to the given number of bytes."
           (dotimes (n new-size)
             (aset new-memory n (aref *glx-memory* n)))
           (setq *glx-memory* new-memory))))))
+
+(defun expand-memory-vector (memory)
+  "Expand the memory vector based on the values of EXTMEM"
+  (vconcat memory
+           (make-vector
+            (glx-32->int
+             (glx-- (glx-32 (aref memory 19) (aref memory 18) (aref memory 17) (aref memory 16))
+                    (glx-32 (aref memory 15) (aref memory 14) (aref memory 13) (aref memory 12))))
+            0)))
+
+(defun glx-restart ()
+  (setq *glx-memory* (glx-restore-memory-with-protect
+                      (expand-memory-vector
+                       (copy-sequence *glx-original-memory*))))
+  (setq *glx-stack* nil)
+  (glx-call-function (glx-memory-get-32 (glx-32 24)) 'glx-return-to-emacs 0 nil))
 
 (provide 'glx-glulx)

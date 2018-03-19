@@ -37,13 +37,7 @@
               (equal (glx-memory-get-32 glx-4) (glx-32 0 0 2 0)))
     (signal 'glx-load-error (list "Incorrect Glulx version" (glx-memory-get-32 glx-4))))
   (setq *glx-ram-start* (glx-memory-get-32 glx-8))
-  (setq *glx-memory*
-        (vconcat *glx-memory*
-                 (make-vector
-                  (glx-32->int
-                   (glx-- (glx-memory-get-32 (glx-32 16))
-                          (glx-memory-get-32 (glx-32 12))))
-                  0)))
+  (setq *glx-memory* (expand-memory-vector *glx-memory*))
   (setq *glx-string-table* (glx-memory-get-32 (glx-32 28)))
   (setq *glx-stack* '())
   (glx-memory-get-32 (glx-32 24)))
@@ -51,6 +45,7 @@
 (defun glx-play-game (file-name)
   (interactive "fGame file name: ")
   (setq *glx-memory* (glx-load-story-file file-name))
+  (setq *glx-original-memory* (copy-sequence *glx-memory*))
   (setq *glx-glk-selected* nil)
   (setq *glx-glk-id-gen* 0)
   (setq *glx-pc* nil)
@@ -78,6 +73,7 @@
     (setq *glx-stack* nil)
     (setq *glx-string-table* nil)
     (setq *glx-memory* nil)
+    (setq *glx-original-memory* nil)
     (setq *glx-ram-start* nil)
     (setq *glx-glk-selected* nil)
     (setq *glx-memory* nil)
