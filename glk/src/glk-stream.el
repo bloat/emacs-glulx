@@ -28,7 +28,7 @@ Used by routines which do not specify a stream")
                 'rear-nonsticky t
                 'front-sticky '(read-only)
                 'glk-text t
-                'face (glki-get-current-style-face)
+                'face (glki-opq-stream-get-face stream)
                 'hard t)))
 
 (defun glki-get-current-style-face ()
@@ -40,8 +40,7 @@ Used by routines which do not specify a stream")
       (fill-region pre-insert-point (line-end-position)))))
 
 (defun glk-put-string-stream (str s)
-  (save-current-buffer
-    (set-buffer (glki-opq-stream-get-buffer str))
+  (with-current-buffer (glki-opq-stream-get-buffer str)
     (let ((inhibit-read-only t)
           (pre-insert-point (point-max)))
       (insert (glki-process-string-for-insertion str s))
@@ -59,8 +58,7 @@ Used by routines which do not specify a stream")
   (glk-put-char-stream glk-current-stream ch))
 
 (defun glk-get-char-stream (str)
-  (save-current-buffer
-    (set-buffer (glki-opq-stream-get-buffer str))
+  (with-current-buffer (glki-opq-stream-get-buffer str)
     (let ((char (char-after)))
       (forward-char)
       char)))

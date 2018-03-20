@@ -180,11 +180,9 @@
      (glk-put-string-stream 'a-stream "hello")
      (should (equal (glk-stream-close 'a-stream) '(nil (t 0 5 nil buffer "hello"))))))
 
-  ;; TODO this uses the current stream for the face, when it should use the passed in stream
   (ert-deftest setting-a-face-on-a-stream ()
     "Setting a face on a stream"
     :tags '(glk stream)
-    :expected-result :failed
     (clean-up-and-check
      (put 'a-stream 'buffer (generate-new-buffer "*glk*"))
      (glk-set-style-stream 'a-stream 'glk-emphasized-face)

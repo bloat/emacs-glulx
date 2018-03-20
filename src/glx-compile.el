@@ -69,6 +69,6 @@ number of bytes used from the instructions argument data."
   (apply (first compiled-inst) ; The instruction function
          (second compiled-inst) ; The addressing modes used to load the args
          (mapcar #'(lambda (compiled-arg) (funcall (first compiled-arg) (second compiled-arg)))
-                 (third compiled-inst)))) ; Call the functions to get the values for the opcodes arguments.
+                 (third compiled-inst)))) ; Call the functions to get the values for the instruction's arguments.
 
 (provide 'glx-compile)

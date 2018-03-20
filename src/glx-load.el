@@ -32,6 +32,8 @@
   (unless (equal (glx-memory-get-32 glx-0) (glx-32 #x6c #x75 #x6c #x47))
     (signal 'glx-load-error (list "Not a Glulx game file" (glx-memory-get-32 glx-0))))
   (unless (or (equal (glx-memory-get-32 glx-4) (glx-32 3 1 3 0))
+              (equal (glx-memory-get-32 glx-4) (glx-32 2 1 3 0))
+              (equal (glx-memory-get-32 glx-4) (glx-32 1 1 3 0))
               (equal (glx-memory-get-32 glx-4) (glx-32 0 1 3 0))
               (equal (glx-memory-get-32 glx-4) (glx-32 0 0 3 0))
               (equal (glx-memory-get-32 glx-4) (glx-32 0 0 2 0)))

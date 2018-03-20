@@ -26,7 +26,7 @@
 (put 'glx-exec-error 'error-conditions '(error glx-error glx-exec-error))
 (put 'glx-exec-error 'error-message "Glulx execution error")
 
-(defvar *glx-compile* nil)
+(defvar *glx-compile* t)
 
 (defun glx-get-opcode (memptr)
   "An opcode can encoded into 1, 2 or 4 bytes. Returns the location of the data following
