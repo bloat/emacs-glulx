@@ -434,9 +434,9 @@
   "gestalt instruction"
   :tags '(instructions)
 
-  (with-glx-memory (0 0 0 0 0) (0 0 3 1 0)
+  (with-glx-memory (0 0 0 0 0) (0 0 3 1 3)
     (glx-instruction-gestalt nil glx-0 glx-0 (list #'glx-store-mem glx-1)))
-  (with-glx-memory (0 0 3 1 0) (0 0 0 0 0)
+  (with-glx-memory (0 0 3 1 0) (0 0 0 1 0)
     (glx-instruction-gestalt nil glx-1 glx-0 (list #'glx-store-mem glx-1)))
   (with-glx-memory (0 0 0 0 0) (0 0 0 0 1)
     (glx-instruction-gestalt nil glx-2 glx-0 (list #'glx-store-mem glx-1)))

@@ -20,11 +20,11 @@
 (put 'glx-value-error 'error-conditions '(error glx-error glx-value-error))
 (put 'glx-value-error 'error-message "Glulx VM value error")
 
-(defvar int->32 (make-hash-table))
+(defconst glx-int->32-cache (make-hash-table))
 
 (defsubst glx-int->32 (value)
   "glx-value private: create a glx-32 from an integer"
-  (let ((memo (gethash value int->32)))
+  (let ((memo (gethash value glx-int->32-cache)))
     (if memo
         memo
       (if (< value 0)

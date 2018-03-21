@@ -235,6 +235,7 @@
   :tags '(exec)
   ;; A function which only returns 0
   (let ((*glx-memory* [#xc0 0 0 #x31 0])
-        (*glx-stack* nil))
+        (*glx-stack* nil)
+        (*glx-compile* nil))
     ;; This will run off the end of the memory vector if it doesn't return properly.
     (glx-call-function-and-return-to-emacs glx-0 nil)))

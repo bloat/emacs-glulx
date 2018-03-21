@@ -56,7 +56,8 @@
   (setq *glx-undo* nil)
   (setq *glx-protect* nil)
   (setq *glx-iosys* (list (lambda (c)) glx-0 glx-0))
-  
+  (setq *glx-compiled-instructions* (make-hash-table :test 'equal :size 100000))
+    
   (setq glk-event-reentry-function #'glx-glk-event-callback)
   (save-excursion
     (set-buffer *glx-log-buffer*)
@@ -85,6 +86,7 @@
     (setq *glx-catch-token* glx-0)
     (setq *glx-undo* nil)
     (setq *glx-protect* nil)
+    (setq *glx-compiled-instructions* nil)
     (message "glulx finished")))
 
 (provide 'glx-load)

@@ -287,7 +287,7 @@
     (should (glx-stack-unwind glx-0))
     (should-error (glx-stack-unwind glx-0)))
 
-  ;; Ignores non-mathing tokens
+  ;; Ignores non-matching tokens
   (let ((*glx-stack* ()))
     (glx-push-call-stub 0 glx-0)
     (glx-push-new-call-frame ())

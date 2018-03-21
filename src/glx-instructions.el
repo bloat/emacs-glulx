@@ -260,8 +260,8 @@
 (glx-defopcode 'streamstr #x72 '(load) (lambda (modes l1) (glx-get-string l1)))
 (glx-defopcode 'streamunichar #x73 '(load) (lambda (modes l1) (funcall (glx-iosys-charfun) (glx-32->unicode-char l1))))
 
-(glx-def-store gestalt #x100 (l1 l2) (cond ((equal glx-0 l1) (glx-32 0 1 3))
-                                           ((equal glx-1 l1) glx-0)
+(glx-def-store gestalt #x100 (l1 l2) (cond ((equal glx-0 l1) (glx-32 3 1 3))
+                                           ((equal glx-1 l1) (glx-32 0 1))
                                            ((equal glx-2 l1) glx-1)
                                            ((equal glx-3 l1) glx-1)
                                            ((equal glx-4 l1) (if (or (equal l2 glx-0)

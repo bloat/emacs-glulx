@@ -12,7 +12,8 @@
 (require 'glx-stack)
 
 (defconst glx-instructions (make-hash-table))
-(defconst glx-compiled-instructions (make-hash-table :test 'equal :size 100000))
+
+(defvar *glx-compiled-instructions*)
 
 (defsubst glx-instruction-name (instruction)
   (first instruction))
@@ -158,10 +159,10 @@ Also returns the addressing modes themselves. "
 (defun glx-execute-next-instruction ()
   (if *glx-compile*
       (progn
-        (if (not (gethash *glx-pc* glx-compiled-instructions))
+        (if (not (gethash *glx-pc* *glx-compiled-instructions*))
             (multiple-value-bind (next-instruction compiled-instruction) (glx-compile-instruction *glx-pc*)
               (glx-log "Compiled instruction at %08x %s" (glx-32->int  *glx-pc*) compiled-instruction)
-              (when compiled-instruction (puthash *glx-pc* (list compiled-instruction next-instruction) glx-compiled-instructions))))
+              (when compiled-instruction (puthash *glx-pc* (list compiled-instruction next-instruction) *glx-compiled-instructions*))))
         (let ((compiled-instruction (gethash *glx-pc* glx-compiled-instructions)))
           (if compiled-instruction
               (progn
