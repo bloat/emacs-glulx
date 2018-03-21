@@ -163,7 +163,7 @@ Also returns the addressing modes themselves. "
             (multiple-value-bind (next-instruction compiled-instruction) (glx-compile-instruction *glx-pc*)
               (glx-log "Compiled instruction at %08x %s" (glx-32->int  *glx-pc*) compiled-instruction)
               (when compiled-instruction (puthash *glx-pc* (list compiled-instruction next-instruction) *glx-compiled-instructions*))))
-        (let ((compiled-instruction (gethash *glx-pc* glx-compiled-instructions)))
+        (let ((compiled-instruction (gethash *glx-pc* *glx-compiled-instructions*)))
           (if compiled-instruction
               (progn
                 (glx-log "Executing compiled instruction at %08x %s" (glx-32->int *glx-pc*) compiled-instruction)

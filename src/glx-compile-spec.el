@@ -12,45 +12,31 @@
 (ert-deftest compile-the-last-function ()
   "Compile the last function"
   :tags '(compile)
-  :expected-result :failed
   (let ((compiled-function-check nil))
-    (cl-flet ((test-glx-compile-function (ptr) (setq compiled-function-check ptr) nil))
-      (unwind-protect
-          (progn
-            (advice-add 'glx-compile-function :override #'test-glx-compile-function '((name . test-glx-compile-function)))
-            (glx-compile-rom 'a-ptr))
-        (advice-remove 'glx-compile-function 'test-glx-compile-function)))
+    (cl-letf (((symbol-function 'glx-compile-function) (lambda (ptr) (setq compiled-function-check ptr) nil)))
+      (glx-compile-rom 'a-ptr))
     (should (equal compiled-function-check 'a-ptr))))
 
 (ert-deftest compile-the-more-functions ()
   "Compile the more functions"
   :tags '(compile)
-  :expected-result :failed
   (let ((compiled-functions-check (list)))
-    (cl-flet ((test-glx-compile-function (ptr)
-                                         (push ptr compiled-functions-check)
-                                         (when
-                                          (eq ptr 'a-ptr) (list 'a-ptr2 'a-ptr3))))
-      (unwind-protect
-          (progn
-            (advice-add 'glx-compile-function :override #'test-glx-compile-function '((name . test-glx-compile-function)))
-            (glx-compile-rom 'a-ptr))
-        (advice-remove 'glx-compile-function 'test-glx-compile-function)))
+    (cl-letf (((symbol-function 'glx-compile-function) (lambda (ptr)
+                                                         (push ptr compiled-functions-check)
+                                                         (when
+                                                             (eq ptr 'a-ptr) (list 'a-ptr2 'a-ptr3)))))
+      (glx-compile-rom 'a-ptr))
     (should (equal compiled-functions-check '(a-ptr3 a-ptr2 a-ptr)))))
 
 (ert-deftest do-not-recompile-functions ()
   "Don't recompile functions"
   :tags '(compile)
-  :expected-result :failed
   (let ((compiled-functions-check (list)))
-    (cl-flet ((glx-compile-function (ptr)
-                                    (push ptr compiled-functions-check)
-                                    (should (equal (< (length compiled-functions-check) 2)))))
-      (unwind-protect
-          (progn
-            (advice-add 'glx-compile-function :override #'test-glx-compile-function '((name . test-glx-compile-function)))
-            (glx-compile-rom 'a-ptr))
-        (advice-remove 'glx-compile-function 'test-glx-compile-function)))
+    (cl-letf (((symbol-function 'glx-compile-function) (lambda (ptr)
+                                                         (push ptr compiled-functions-check)
+                                                         (should (< (length compiled-functions-check) 2))
+                                                         nil)))
+      (glx-compile-rom 'a-ptr))
     (should (equal compiled-functions-check '(a-ptr)))))
 
 (ert-deftest compile-constant-0-arg ()
