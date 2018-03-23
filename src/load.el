@@ -21,6 +21,7 @@
 (when (featurep 'glx-string) (unload-feature 'glx-string t))
 (when (featurep 'glx-value) (unload-feature 'glx-value t))
 (when (featurep 'glx-compile) (unload-feature 'glx-compile t))
+(when (featurep 'glx-accelerated) (unload-feature 'glx-accelerated t))
 
 (when (featurep 'glk-base) (unload-feature 'glk-base t))
 (when (featurep 'glk-customize) (unload-feature 'glk-customize t))
@@ -41,6 +42,7 @@
 (require 'glx-string)
 (require 'glx-value)
 (require 'glx-compile)
+(require 'glx-accelerated)
 
 (require 'glk-base)
 (require 'glk-customize)
@@ -64,6 +66,7 @@
 (load "glx-instructions-spec.el")
 (load "glx-glk-spec.el")
 (load "glx-compile-spec.el")
+(load "glx-accelerated-spec.el")
 
 (load "window-spec.el")
 (load "stream-spec.el")

@@ -24,6 +24,8 @@
 (defvar *glx-catch-token* glx-0 "An increasing number for catch tokens")
 (defvar *glx-protect* nil "The memory protection range")
 (defvar *glx-log-buffer* nil "A buffer for Glulx VM logging output")
+(defvar *glx-accelerated-parameters* nil "An array of parameters for accelerated functions")
+(defvar *glx-accelerated-functions* nil "A hashtable to store which functions have been accelerated")
 
 (defsubst glx-memory-ref (memptr-int)
   (aref *glx-memory* memptr-int))

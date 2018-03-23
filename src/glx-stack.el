@@ -164,31 +164,58 @@ the locals section of the call frame, or pushed onto the stack following the cal
 
       (glx-stack-push call-frame))))
 
+(defun glx-call-accelerated-function (function-ptr args)
+  (let ((accelerated (gethash function-ptr *glx-accelerated-functions*)))
+    (when accelerated
+      (push () *glx-stack*) ; a dummy call frame - glx-return-from-function will discard it.
+      (glx-return-from-function (apply accelerated args)))))
+
 (defun glx-call-function (function-ptr dest-type dest-addr args)
   "Calls the function pointed to by FUNCTION-PTR. Sets the PC and the Frame Pointer
 appropriately. Pushes necessary data structures onto the stack. The call stub will
 contain DEST-TYPE and DEST-ADDR."
   (glx-push-call-stub dest-type dest-addr)
-  (glx-build-call-frame function-ptr)
-  (glx-handle-function-args function-ptr args)
-  (setq *glx-pc* (glx-get-function-code-start function-ptr)))
+  (or (glx-call-accelerated-function function-ptr args)
+      (progn
+        (glx-build-call-frame function-ptr)
+        (glx-handle-function-args function-ptr args)
+        (setq *glx-pc* (glx-get-function-code-start function-ptr)))))
 
 (defun glx-tailcall-function (function-ptr args)
   "Calls the function pointed to by FUNCTION-PTR. Replaces the current call frame 
 with a new call frame, does not create a new call stub, but retains the previous one
 which will be used when returning from this function."
   (glx-stack-pop)
-  (glx-build-call-frame function-ptr)
-  (glx-handle-function-args function-ptr args)
-  (setq *glx-pc* (glx-get-function-code-start function-ptr)))
+  (or (glx-call-accelerated-function function-ptr args)
+      (progn
+        (glx-build-call-frame function-ptr)
+        (glx-handle-function-args function-ptr args)
+        (setq *glx-pc* (glx-get-function-code-start function-ptr)))))
 
-(defun glx-return-from-function ()
-  "Removes the current call frame from the stack. Also removes and returns the
-current call stub. Sets the PC back to the value stored in the call stub."
+(defun glx-dest-type->store-fun (dest-type)
+  (cond ((= 3 dest-type) #'glx-store-stack)
+        ((= 2 dest-type) #'glx-store-local)
+        ((= 1 dest-type) #'glx-store-mem)
+        ((= 0 dest-type) #'glx-store-throw)))
+
+(defun glx-return-from-function (return-value)
+  "Removes the current call frame from the stack. Also removes the current
+call stub and uses it to stores the RETURN-VALUE and set the PC."
   (glx-stack-pop)
-  (let ((call-stub (glx-stack-pop)))
+  
+  (let* ((call-stub (glx-stack-pop))
+         (dest-type (glx-call-stub-dest-type call-stub)))
     (setq *glx-pc* (glx-call-stub-pc call-stub))
-    call-stub))
+    
+    ;; The dest-type may have a symbol if we want to stop 
+    ;; executing glulx code when returning from this glulx function.
+    ;; If so we signal this by return the dest-type up to the
+    ;; main glulx loop.
+    (if (numberp dest-type)
+        (funcall (glx-dest-type->store-fun dest-type)
+                 (glx-call-stub-dest-addr call-stub)
+                 return-value)
+      dest-type)))
 
 (defun glx-catch-push (token)
   "Pushes a catch token onto the current call frame's stack. This

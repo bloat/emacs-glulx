@@ -130,7 +130,7 @@
     (should (equal *glx-pc* (glx-32 27))))
 
   (let (return-was-called)
-    (cl-letf (((symbol-function 'glx-instruction-return) (lambda (modes result) (setq return-was-called result))))
+    (cl-letf (((symbol-function 'glx-return-from-function) (lambda (result) (setq return-was-called result))))
       (glx-instruction-jlt nil glx-1 glx-2 glx-1)
       (should (equal return-was-called glx-1)))))
 
@@ -152,39 +152,9 @@
     (should (equal *glx-pc* (glx-32 7))))
 
   (let (return-was-called)
-    (cl-letf (((symbol-function 'glx-instruction-return) (lambda (modes result) (setq return-was-called result))))
+    (cl-letf (((symbol-function 'glx-return-from-function) (lambda (result) (setq return-was-called result))))
       (glx-instruction-jne nil glx-1 glx-2 glx-0)
       (should (equal return-was-called glx-0)))))
-
-(ert-deftest return-instruction ()
-  "return instruction"
-  :tags '(instructions)
-
-  (let ((call-count 0))
-    (cl-letf (((symbol-function 'glx-return-from-function)
-               (lambda () (cond ((= call-count 0) (incf call-count) (list 0 glx-0 glx-5))
-                                ((= call-count 1) (incf call-count) (list 3 glx-0 glx-5))
-                                ((= call-count 2) (incf call-count) (list 2 glx-2 glx-5))
-                                ((= call-count 3) (incf call-count) (list 1 glx-2 glx-5))))))
-      
-      ;; ignore result
-      (glx-instruction-return nil glx-3)
-      (should (= call-count 1))
-      
-      ;; push result onto stack
-      (with-glx-stack () (4)
-        (glx-instruction-return nil glx-4)
-        (should (= call-count 2)))
-
-      ;; store result in local
-      (with-glx-locals ((2 0)) ((2 4))
-        (glx-instruction-return nil glx-4)
-        (should (= call-count 3)))
-
-      ;; store result in memory
-      (with-glx-memory (0 0 0 0 0 0 0 0) (0 0 7 6 5 4 0 0)
-        (glx-instruction-return nil (glx-32 4 5 6 7))
-        (should (= call-count 4))))))
 
 (ert-deftest jge-instruction ()
   "jge instruction"

@@ -13,6 +13,7 @@
 (require 'glx-glulx)
 (require 'glx-stack)
 (require 'glx-exec)
+(require 'glx-accelerated)
 
 (require 'glk-event)
 
@@ -57,7 +58,10 @@
   (setq *glx-protect* nil)
   (setq *glx-iosys* (list (lambda (c)) glx-0 glx-0))
   (setq *glx-compiled-instructions* (make-hash-table :test 'equal :size 100000))
-    
+  (setq *glx-accelerated-functions* (make-hash-table :test 'equal :size 10))
+  (setq *glx-accelerated-parameters* (make-vector 9 glx-0))
+  (setq *glx-compile* t)
+  
   (setq glk-event-reentry-function #'glx-glk-event-callback)
   (save-excursion
     (set-buffer *glx-log-buffer*)
@@ -87,6 +91,8 @@
     (setq *glx-undo* nil)
     (setq *glx-protect* nil)
     (setq *glx-compiled-instructions* nil)
+    (setq *glx-accelerated-functions* nil)
+    (setq *glx-accelerated-parameters* nil)
     (message "glulx finished")))
 
 (provide 'glx-load)

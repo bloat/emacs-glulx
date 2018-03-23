@@ -99,7 +99,8 @@
   :tags '(stack)
   (let ((*glx-stack* ())
         (*glx-memory* [#xc0 0 0])
-        (*glx-pc* (glx-32 400)))
+        (*glx-pc* (glx-32 400))
+        (*glx-accelerated-functions* (make-hash-table)))
     (glx-call-function glx-0 0 glx-0 nil)
     (should (zerop (length (glx-get-all-local-offsets))))
     (should (equal (glx-stack-count) glx-1))
@@ -116,7 +117,8 @@
   :tags '(stack)
   (let ((*glx-stack* ())
         (*glx-memory* [#xc1 0 0])
-        (*glx-pc* (glx-32 400)))
+        (*glx-pc* (glx-32 400))
+        (*glx-accelerated-functions* (make-hash-table)))
     (glx-call-function glx-0 0 glx-0 nil)
     (should (zerop (length (glx-get-all-local-offsets))))
     (should (equal (glx-stack-count) glx-0))))
@@ -126,7 +128,8 @@
   :tags '(stack)
   (let ((*glx-stack* ())
         (*glx-memory* [#xc0 0 0])
-        (*glx-pc* (glx-32 400)))
+        (*glx-pc* (glx-32 400))
+        (*glx-accelerated-functions* (make-hash-table)))
     (glx-call-function glx-0 0 glx-0 (list glx-2 (glx-32 4 5 6 7)))
     (should (equal (glx-stack-count) glx-3))
     (should (equal (glx-stack-peek 3) `(,glx-2 ,glx-2 ,(glx-32 4 5 6 7))))))
@@ -136,13 +139,70 @@
   :tags '(stack)
   (let ((*glx-stack* ())
         (*glx-memory* [#xc1 1 1 2 1 4 1 0 0])
-        (*glx-pc* (glx-32 400)))
+        (*glx-pc* (glx-32 400))
+        (*glx-accelerated-functions* (make-hash-table)))
     (glx-call-function glx-0 0 glx-0 (list (glx-32 1 2 3 4) (glx-32 1 2 3 4) (glx-32 1 2 3 4)))
     (should (equal (glx-stack-count) glx-0))
     (should (= (length (glx-get-all-local-offsets)) 3))
     (should (equal (glx-get-local-at-offset glx-0) glx-1))
     (should (equal (glx-get-local-at-offset glx-2) (glx-32 1 2)))
     (should (equal (glx-get-local-at-offset glx-4) (glx-32 1 2 3 4)))))
+
+(ert-deftest call-an-accelerated-function ()
+  "Should be able to call an accelerated function"
+  :tags '(stack)
+  (let ((*glx-accelerated-functions* (make-hash-table))
+        (*glx-stack* ())
+        (*glx-memory* (vector #xc1 1 1 2 1 4 1 0 0))
+        (*glx-pc* (glx-32 400)))
+    (let (accelerated-args)
+      (cl-letf (((symbol-function 'accelerated-function) (lambda (&rest args) (setq accelerated-args args) glx-5)))
+        (puthash glx-0 #'accelerated-function *glx-accelerated-functions*)
+        (glx-call-function glx-0 1 glx-4 (list glx-3 glx-5)))
+      (should (equal accelerated-args (list glx-3 glx-5)))
+      (should (equal *glx-memory* [#xc1 1 1 2 0 0 0 5 0])))))
+
+(ert-deftest return-from-function-ignore-result ()
+  "return from function - ignore result"
+  :tags '(stack)
+
+  (let ((*glx-stack* (list (list) (list 0 glx-0 glx-4)))
+        (*glx-pc* glx-5))
+    (glx-return-from-function glx-3)
+    (should (equal *glx-stack* nil))
+    (should (equal *glx-pc* glx-4))))
+
+(ert-deftest return-from-function-result-on-stack ()
+  "return from function - push result onto stack"
+  :tags '(stack)
+
+  (let ((*glx-stack* (list (list) (list 3 glx-0 glx-4) (list (list) (list))))
+        (*glx-pc* glx-5))
+    (glx-return-from-function glx-3)
+    (should (equal *glx-stack* (list (list (list glx-3) (list)))))
+    (should (equal *glx-pc* glx-4))))
+
+(ert-deftest return-from-function-result-in-locals ()
+  "return from function - put result into locals"
+  :tags '(stack)
+
+  (let ((*glx-stack* (list (list) (list 2 glx-0 glx-4) (list (list) (list (cons glx-0 glx-0)))))
+        (*glx-pc* glx-5))
+    (glx-return-from-function glx-3)
+    (should (equal *glx-stack* (list (list (list) (list (cons glx-0 glx-3))))))
+    (should (equal *glx-pc* glx-4))))
+
+(ert-deftest return-from-function-result-in-memory ()
+  "return from function - put result into memory"
+  :tags '(stack)
+
+  (let ((*glx-stack* (list (list) (list 1 glx-1 glx-4)))
+        (*glx-pc* glx-5)
+        (*glx-memory* (vector 1 1 1 1 1)))
+    (glx-return-from-function glx-3)
+    (should (equal *glx-stack* nil))
+    (should (equal *glx-pc* glx-4))
+    (should (equal *glx-memory* [1 0 0 0 3]))))
 
 (ert-deftest push-and-pop-a-value-into-the-current-call-frame ()
   "Should be able to push and pop a value into the current call frame"
@@ -196,16 +256,6 @@
     (should (equal (glx-get-local-at-offset glx-0) glx-0))
     (should-error (glx-get-local-at-offset glx-1) :type 'glx-stack-error)))
 
-(ert-deftest return-from-a-function ()
-  "Should be able to return from a function"
-  :tags '(stack)
-  (let ((*glx-stack* ())
-        (*glx-pc* glx-5))
-    (glx-push-call-stub 0 glx-0)
-    (glx-push-new-call-frame ())
-    (should (equal (glx-return-from-function) (list 0 glx-0 glx-5)))
-    (should (not (glx-stack-pop)))))
-
 (ert-deftest peek-at-the-stack ()
   "Should be able to peek at the stack"
   :tags '(stack)
@@ -232,7 +282,8 @@
 
   (let ((*glx-stack* ())
         (*glx-pc* glx-8)
-        (*glx-memory* [#xc0 0 0]))
+        (*glx-memory* [#xc0 0 0])
+        (*glx-accelerated-functions* (make-hash-table)))
     (glx-push-call-stub 0 glx-1)
     (glx-push-new-call-frame (list (cons glx-0 glx-0)))
     (glx-value-push glx-1)
@@ -254,6 +305,24 @@
       (should (= (glx-call-stub-dest-type stub) 0))
       (should (equal (glx-call-stub-dest-addr stub) glx-1))
       (should (equal (glx-call-stub-pc stub) glx-8)))))
+
+(ert-deftest tailcall-accelerated ()
+  "tailcall an accelerated function"
+  :tags 'stack
+
+  (let ((*glx-stack* ())
+        (*glx-pc* glx-8)
+        (*glx-memory* (vector #xc0 0 0 1 1 1 1))
+        (*glx-accelerated-functions* (make-hash-table))
+        (accelerated-args))
+    (cl-letf (((symbol-function 'accelerated-function) (lambda (&rest args) (setq accelerated-args args) glx-5)))
+      (puthash glx-0 #'accelerated-function *glx-accelerated-functions*)
+      (glx-push-call-stub 1 glx-3)
+      (glx-push-new-call-frame (list (cons glx-0 glx-0)))
+      (glx-value-push glx-1)
+      (glx-tailcall-function glx-0 (list glx-3 glx-5)))
+    (should (equal accelerated-args (list glx-3 glx-5)))
+    (should (equal *glx-memory* [#xc0 0 0 0 0 0 5]))))
 
 (ert-deftest unwind ()
   "Unwind the stack to help implement a throw"

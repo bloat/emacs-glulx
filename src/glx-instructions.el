@@ -15,13 +15,14 @@
 (require 'glx-exec)
 (require 'glx-string)
 (require 'glx-glk)
+(require 'glx-accelerated)
 
 (defun glx-defopcode (name number arg-list function)
   (puthash number (list name arg-list function) glx-instructions))
 
 (defun glx-branch-or-return (offset)
   (if (or (equal offset glx-0) (equal offset glx-1))
-      (glx-instruction-return nil offset)
+      (glx-return-from-function offset)
     (setq *glx-pc* (glx-- (glx-+ *glx-pc* offset) glx-2))
     (glx-log "Branching - set PC to %x" (glx-32->int *glx-pc*))))
 
@@ -111,27 +112,7 @@
 
 (glx-defopcode 'call #x30 '(load load store) #'glx-instruction-call)
 
-(defun glx-dest-type->store-fun (dest-type)
-  (cond ((= 3 dest-type) #'glx-store-stack)
-        ((= 2 dest-type) #'glx-store-local)
-        ((= 1 dest-type) #'glx-store-mem)
-        ((= 0 dest-type) #'glx-store-throw)))
-
-(defun glx-instruction-return (modes result)
-  (let* ((call-stub (glx-return-from-function))
-         (dest-type (glx-call-stub-dest-type call-stub)))
-
-    ;; The dest-type may have a symbol if we want to stop 
-    ;; executing glulx code when returning from this glulx function.
-    ;; If so we signal this by return the dest-type up to the
-    ;; main glulx loop.
-    (if (numberp dest-type)
-        (funcall (glx-dest-type->store-fun dest-type)
-                 (glx-call-stub-dest-addr call-stub)
-                 result)
-      dest-type)))
-
-(glx-defopcode 'return #x31 '(load) #'glx-instruction-return)
+(glx-defopcode 'return #x31 '(load) (lambda (modes result) (glx-return-from-function result)))
 
 (defun glx-instruction-catch (modes store dest)
   (let ((token *glx-catch-token*))
@@ -271,6 +252,10 @@
                                                                glx-0))
                                            ((equal glx-5 l1) glx-1)
                                            ((equal (glx-32 6) l1) glx-1)
+                                           ((equal (glx-32 9) l1) glx-1)
+                                           ((equal (glx-32 10) l1) (if (or (equal l2 glx-1))
+                                                                       glx-1
+                                                                     glx-0))
                                            (glx-0)))
 
 (glx-def-store getmemsize #x102 () (glx-32 (length *glx-memory*)))
@@ -379,5 +364,20 @@
 (glx-defopcode 'mcopy #x171 '(load load load) (lambda (modes l1 l2 l3) (glx-memory-mcopy l1 l2 l3)))
 
 (glx-def-store malloc '#x178 (l1) 0)
+
+(defun glx-instruction-accelfunc (modes accelerated-function memptr)
+  (glx-log "Accelerating: %S" memptr)
+  (cond
+   ((glx-0-p accelerated-function) (remhash memptr *glx-accelerated-functions*))
+   ((equal glx-1 accelerated-function) (puthash memptr #'glx-accelerated-z-region *glx-accelerated-functions*))))
+
+(glx-defopcode 'accelfunc #x180 '(load load) #'glx-instruction-accelfunc)
+
+(defun glx-instruction-accelparam (modes index val)
+  (let ((parameter-index (glx-32->int index)))
+    (when (< -1 parameter-index 9)
+      (aset *glx-accelerated-parameters* (glx-32->int index) val))))
+
+(glx-defopcode 'accelparam #x181 '(load load) #'glx-instruction-accelparam)
 
 (provide 'glx-instructions)
