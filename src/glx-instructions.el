@@ -257,7 +257,8 @@
                                                                            (equal l2 glx-2)
                                                                            (equal l2 glx-3)
                                                                            (equal l2 glx-4)
-                                                                           (equal l2 glx-5))
+                                                                           (equal l2 glx-5)
+                                                                           (equal l2 (glx-32 6)))
                                                                        glx-1
                                                                      glx-0))
                                            (glx-0)))
@@ -377,7 +378,8 @@
    ((equal glx-2 accelerated-function) (puthash memptr (list #'glx-accelerated-cp-tab 2) *glx-accelerated-functions*))
    ((equal glx-3 accelerated-function) (puthash memptr (list #'glx-accelerated-ra-pr 2) *glx-accelerated-functions*))
    ((equal glx-4 accelerated-function) (puthash memptr (list #'glx-accelerated-rl-pr 2) *glx-accelerated-functions*))
-   ((equal glx-5 accelerated-function) (puthash memptr (list #'glx-accelerated-oc-cl 2) *glx-accelerated-functions*))))
+   ((equal glx-5 accelerated-function) (puthash memptr (list #'glx-accelerated-oc-cl 2) *glx-accelerated-functions*))
+   ((equal (glx-32 6) accelerated-function) (puthash memptr (list #'glx-accelerated-rv-pr 2) *glx-accelerated-functions*))))
 
 (glx-defopcode 'accelfunc #x180 '(load load) #'glx-instruction-accelfunc)
 

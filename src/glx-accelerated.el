@@ -113,4 +113,12 @@
                       (incf jx)))
                   result)))))))
 
+(defun glx-accelerated-rv-pr (obj id)
+  (let ((addr (glx-accelerated-ra-pr obj id)))
+    (if (glx-0-p addr)
+        (if (and (glx-pos-p id) (glx-32-u< id (glx-acc-param 1)))
+            (glx-memory-get-32 (glx-+ (glx-acc-param 8) (glx-*-byte id 4)))
+          (signal 'glx-accelerated-error (list "Tried to read (something)" obj id)))
+      (glx-memory-get-32 addr))))
+
 (provide 'glx-accelerated)
