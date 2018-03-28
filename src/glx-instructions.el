@@ -166,14 +166,14 @@
 (glx-def-store aloads #x49 (l1 l2) (glx-memory-get-16 (glx-+ l1 (glx-*-byte l2 2))))
 (glx-def-store aloadb #x4a (l1 l2) (glx-memory-get-byte (glx-+ l1 l2)))
 
-(defun get-bit-access-vars (l1 l2)
+(defun glx-get-bit-access-vars (l1 l2)
   (let* ((l2int (glx-s32->int l2))
          (l2intmod (% l2int 8)))
     (values (expt 2 (if (< l2intmod 0) (+ 8 l2intmod) l2intmod))
             (glx-+ l1 (glx-32 (+ (/ l2int 8) (if (and (not (zerop l2intmod)) (< l2int 0)) -1 0)))))))
 
 (glx-def-store aloadbit #x4b (l1 l2)
-               (multiple-value-bind (bit-mask memptr) (get-bit-access-vars l1 l2)
+               (multiple-value-bind (bit-mask memptr) (glx-get-bit-access-vars l1 l2)
                  (if (= 0 (logand bit-mask (glx-memory-get-byte-int memptr))) glx-0 glx-1)))
 
 (defun glx-instruction-astore (modes l1 l2 l3)
@@ -192,7 +192,7 @@
 (glx-defopcode 'astoreb #x4e '(load load load) #'glx-instruction-astoreb)
 
 (defun glx-instruction-astorebit (modes l1 l2 l3)
-  (multiple-value-bind (bit-mask memptr) (get-bit-access-vars l1 l2)
+  (multiple-value-bind (bit-mask memptr) (glx-get-bit-access-vars l1 l2)
     (glx-memory-set memptr
                     (glx-32 (if (glx-0-p l3)
                                 (logand (lognot bit-mask) (glx-memory-get-byte-int memptr))
@@ -253,7 +253,11 @@
                                            ((equal glx-5 l1) glx-1)
                                            ((equal (glx-32 6) l1) glx-1)
                                            ((equal (glx-32 9) l1) glx-1)
-                                           ((equal (glx-32 10) l1) (if (or (equal l2 glx-1))
+                                           ((equal (glx-32 10) l1) (if (or (equal l2 glx-1)
+                                                                           (equal l2 glx-2)
+                                                                           (equal l2 glx-3)
+                                                                           (equal l2 glx-4)
+                                                                           (equal l2 glx-5))
                                                                        glx-1
                                                                      glx-0))
                                            (glx-0)))
@@ -369,7 +373,11 @@
   (glx-log "Accelerating: %S" memptr)
   (cond
    ((glx-0-p accelerated-function) (remhash memptr *glx-accelerated-functions*))
-   ((equal glx-1 accelerated-function) (puthash memptr #'glx-accelerated-z-region *glx-accelerated-functions*))))
+   ((equal glx-1 accelerated-function) (puthash memptr (list #'glx-accelerated-z-region 1) *glx-accelerated-functions*))
+   ((equal glx-2 accelerated-function) (puthash memptr (list #'glx-accelerated-cp-tab 2) *glx-accelerated-functions*))
+   ((equal glx-3 accelerated-function) (puthash memptr (list #'glx-accelerated-ra-pr 2) *glx-accelerated-functions*))
+   ((equal glx-4 accelerated-function) (puthash memptr (list #'glx-accelerated-rl-pr 2) *glx-accelerated-functions*))
+   ((equal glx-5 accelerated-function) (puthash memptr (list #'glx-accelerated-oc-cl 2) *glx-accelerated-functions*))))
 
 (glx-defopcode 'accelfunc #x180 '(load load) #'glx-instruction-accelfunc)
 

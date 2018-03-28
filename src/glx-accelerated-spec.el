@@ -43,3 +43,21 @@
   (let ((*glx-memory* (vconcat (make-vector 40 0) [#x75 0]))
         (*glx-ram-start* (glx-32 38)))
     (should (equal (glx-accelerated-z-region (glx-32 40)) glx-1))))
+
+(ert-deftest cp-tab-error ()
+  "Signals error if argument is not an object"
+  :tags '(accelerated)
+  
+  (cl-letf (((symbol-function 'glx-accelerated-z-region) (lambda (x) (should (equal x glx-5)) glx-2)))
+    (should-error (glx-accelerated-cp-tab glx-5 (glx-32 10)) :type 'glx-accelerated-error)))
+
+(ert-deftest cp-tab ()
+  "Does binary search with appropriate arguments"
+  :tags '(accelerated)
+
+  (let (search-args
+        (*glx-ram-start* (glx-32 37))
+        (*glx-memory* (vconcat (make-vector 40 0) [0 0 0 0 #x70 0 0 0 100 0 0 0 0 0 0 0 0 0 0 0 0 0 0 45])))
+    (cl-letf (((symbol-function 'glx-memory-binary-search) (lambda (&rest args) (setq search-args args) (glx-32 100))))
+      (should (equal (glx-accelerated-cp-tab (glx-32 44) (glx-32 10)) (glx-32 100)))
+      (should (equal search-args (list (glx-32 10) glx-2 (glx-32 49) (glx-32 10) (glx-32 100) glx-0 glx-0))))))

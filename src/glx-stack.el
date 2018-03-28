@@ -168,7 +168,14 @@ the locals section of the call frame, or pushed onto the stack following the cal
   (let ((accelerated (gethash function-ptr *glx-accelerated-functions*)))
     (when accelerated
       (push () *glx-stack*) ; a dummy call frame - glx-return-from-function will discard it.
-      (glx-return-from-function (apply accelerated args)))))
+      (if (< (length args) (second accelerated))
+          (progn
+            (setq args (nreverse args))
+            (while (< (length args) (second accelerated))
+              (push glx-0 args))
+            (setq args (nreverse args))))
+      (setq args (subseq args 0 (second accelerated)))
+      (glx-return-from-function (apply (first accelerated) args)))))
 
 (defun glx-call-function (function-ptr dest-type dest-addr args)
   "Calls the function pointed to by FUNCTION-PTR. Sets the PC and the Frame Pointer
