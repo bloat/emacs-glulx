@@ -121,4 +121,23 @@
           (signal 'glx-accelerated-error (list "Tried to read (something)" obj id)))
       (glx-memory-get-32 addr))))
 
+(defun glx-accelerated-op-pr (obj id)
+  (let ((zr (glx-accelerated-z-region obj)))
+    (cond ((equal zr glx-3)
+           (if (or (equal id (glx-+ (glx-acc-param 1) (glx-32 6)))
+                   (equal id (glx-+ (glx-acc-param 1) (glx-32 7))))
+               glx-1
+             glx-0))
+          ((equal zr glx-2)
+           (if (equal id (glx-+ (glx-acc-param 1) glx-5))
+               glx-1
+             glx-0))
+          ((not (equal zr glx-1)) glx-0)
+          ((and (not (glx-neg-p (glx-- id (glx-acc-param 1))))
+                (glx-neg-p (glx-- id (glx-+ (glx-acc-param 1) glx-8)))
+                (glx-accelerated-util-obj-in-class obj))
+           glx-1)
+          ((not (glx-0-p (glx-accelerated-ra-pr obj id))) glx-1)
+          (glx-0))))
+
 (provide 'glx-accelerated)
