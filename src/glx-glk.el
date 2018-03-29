@@ -14,6 +14,7 @@
 (require 'glx-stack)
 (require 'glx-load)
 (require 'glx-exec)
+(require 'glk)
 
 (put 'glx-glk-error 'error-conditions '(error glx-error glx-glk-error))
 (put 'glx-glk-error 'error-message "Glulx VM glk error")

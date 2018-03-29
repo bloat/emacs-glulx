@@ -14,8 +14,8 @@
 (require 'glx-stack)
 (require 'glx-exec)
 (require 'glx-accelerated)
-
 (require 'glk-event)
+(require 'glk)
 
 (defvar *glx-unexpected-exit* nil "Is the VM exiting unexpectedly, or because it's waiting for player input")
 

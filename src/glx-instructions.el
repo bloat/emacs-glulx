@@ -238,7 +238,7 @@
 
 (glx-defopcode 'streamchar #x70 '(load) (lambda (modes l1) (funcall (glx-iosys-charfun) (glx-32->char l1))))
 (glx-defopcode 'streamnum #x71 '(load) (lambda (modes l1) (mapcar (lambda (c) (funcall (glx-iosys-charfun) c)) (glx-32->dec-string l1))))
-(glx-defopcode 'streamstr #x72 '(load) (lambda (modes l1) (glx-get-string l1)))
+(glx-defopcode 'streamstr #x72 '(load) (lambda (modes l1) (glx-get-string l1 #'glx-call-function-and-return-to-emacs)))
 (glx-defopcode 'streamunichar #x73 '(load) (lambda (modes l1) (funcall (glx-iosys-charfun) (glx-32->unicode-char l1))))
 
 (glx-def-store gestalt #x100 (l1 l2) (cond ((equal glx-0 l1) (glx-32 3 1 3))
@@ -282,7 +282,15 @@
 (glx-defopcode 'setrandom #x111 '(load) (lambda (modes seed) (random (format "%S" seed))))
 (glx-defopcode 'quit #x120 '() (lambda (modes) 'glx-quit))
 (glx-def-store verify #x121 () glx-0)
-(glx-defopcode 'restart #x122 '() (lambda (modes) (glx-restart)))
+
+(defun glx-instruction-restart (modes)
+  (setq *glx-memory* (glx-restore-memory-with-protect
+                      (expand-memory-vector
+                       (copy-sequence *glx-original-memory*))))
+  (setq *glx-stack* nil)
+  (glx-call-function (glx-memory-get-32 (glx-32 24)) 'glx-return-to-emacs 0 nil))
+
+(glx-defopcode 'restart #x122 '() #'glx-instruction-restart)
 
 (defun glx-save-game (buffer dest-type dest-addr)
   (glx-push-call-stub dest-type dest-addr)
@@ -399,7 +407,7 @@
 
 (defun glx-instruction-accelparam (modes index val)
   (let ((parameter-index (glx-32->int index)))
-    (when (< -1 parameter-index 9)
+    (when (and (<= 0 parameter-index) (< parameter-index 9))
       (aset *glx-accelerated-parameters* (glx-32->int index) val))))
 
 (glx-defopcode 'accelparam #x181 '(load load) #'glx-instruction-accelparam)

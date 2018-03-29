@@ -19,6 +19,7 @@
 (defvar *glx-ram-start* nil "A pointer to the location in memory of the start of RAM")
 (defvar *glx-iosys* (list (lambda (c)) glx-0 glx-0) "The current io system")
 (defvar *glx-undo* nil "Undo information for the Glulx VM")
+(defvar *glx-glk-selected* nil "True if we are using the glk output system")
 (defvar *glx-glk-id-gen* 0 "Generates glk ids for new glk opaque objects")
 (defvar *glx-store-event-memptr* nil "Where to store the glk event on re-entry")
 (defvar *glx-catch-token* glx-0 "An increasing number for catch tokens")
@@ -26,6 +27,7 @@
 (defvar *glx-log-buffer* nil "A buffer for Glulx VM logging output")
 (defvar *glx-accelerated-parameters* nil "An array of parameters for accelerated functions")
 (defvar *glx-accelerated-functions* nil "A hashtable to store which functions have been accelerated")
+(defvar *glx-compiled-instructions* nil "A hashtable to store all the instructions which have been compiled")
 
 (defsubst glx-memory-ref (memptr-int)
   (aref *glx-memory* memptr-int))
@@ -274,12 +276,5 @@ The value is truncated to the given number of bytes."
              (glx-- (glx-32 (aref memory 19) (aref memory 18) (aref memory 17) (aref memory 16))
                     (glx-32 (aref memory 15) (aref memory 14) (aref memory 13) (aref memory 12))))
             0)))
-
-(defun glx-restart ()
-  (setq *glx-memory* (glx-restore-memory-with-protect
-                      (expand-memory-vector
-                       (copy-sequence *glx-original-memory*))))
-  (setq *glx-stack* nil)
-  (glx-call-function (glx-memory-get-32 (glx-32 24)) 'glx-return-to-emacs 0 nil))
 
 (provide 'glx-glulx)

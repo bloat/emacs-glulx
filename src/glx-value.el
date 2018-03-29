@@ -28,14 +28,14 @@
     (if memo
         memo
       (if (< value 0)
-          (glx-- glx-0 (glx-32 (- value)))
+          (glx-- glx-0 (glx-int->32 (- value)))
         (let* ((b1 (/ value glx-b1))
                (b1-rem (% value glx-b1))
                (b2 (/ b1-rem glx-b2))
                (b2-rem (% b1-rem glx-b2))
                (b3 (/ b2-rem glx-b3))
                (b4 (% b2-rem glx-b3)))
-          (glx-32 b4 b3 b2 b1))))))
+          (list b1 b2 b3 b4))))))
 
 (defsubst glx-32 (&optional byte-0 &optional byte-1 &optional byte-2 &optional byte-3)
   (if (and byte-0 (not byte-1) (not byte-2) (not byte-3))

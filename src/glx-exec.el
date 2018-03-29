@@ -13,8 +13,6 @@
 
 (defconst glx-instructions (make-hash-table))
 
-(defvar *glx-compiled-instructions*)
-
 (defsubst glx-instruction-name (instruction)
   (first instruction))
 
@@ -90,7 +88,7 @@ This function mostly deals with advancing the pointer and loading the modes, the
 loaded by the supplied LOAD-ARG-PROCESSOR and STORE-ARG-PROCESSOR functions."
   (let ((number-of-args (length arg-spec)))
     (let ((low-bits t)
-          (arg-ptr (glx-+ addressing-modes-ptr (glx-int->32 (/ (if (oddp number-of-args) (+ 1 number-of-args) number-of-args) 2))))
+          (arg-ptr (glx-+ addressing-modes-ptr (glx-32 (/ (if (oddp number-of-args) (+ 1 number-of-args) number-of-args) 2))))
           args
           modes)
       (dolist (spec arg-spec (values arg-ptr (nreverse args) (nreverse modes)))
@@ -178,5 +176,70 @@ calling more functions as required until this top-level function
 returns."
   (glx-call-function memptr 'glx-return-to-emacs 0 args)
   (while (glx-execute-next-instruction)))
+
+(put 'glx-compile-error 'error-conditions '(error glx-error glx-compile-error))
+(put 'glx-compile-error 'error-message "Glulx compilatation error")
+
+(defun glx-compile-function (function-ptr)
+  ;; TODO
+  )
+
+;; TODO this function is not called yet
+(defun glx-compile-rom (function-ptr)
+  "Compiles the function passed in. Maintains a list of new functions found
+during compilation, and compiles those also."
+  (let ((functions-to-compile (list function-ptr))
+        (compiled-functions nil))
+    (while functions-to-compile
+      (let ((to-compile (pop functions-to-compile)))
+        (unless (memq to-compile compiled-functions)
+          (setf functions-to-compile
+                (append functions-to-compile
+                        (glx-compile-function to-compile)))
+          (push to-compile compiled-functions))))))
+
+(defun glx-compile-load-arg (mode arg-ptr)
+  "The first result is a list of a function to run to retrieve the actual value for the argument,
+and a value to pass as an argument to that function when running it. The second result is the 
+number of bytes used from the instructions argument data."
+  (cond ((= mode 0) (values (list (lambda (loaded-arg-ptr) glx-0) nil) 0))
+        ((= mode 1) (values (list #'identity (glx-memory-get-byte-signed arg-ptr)) 1))
+        ((= mode 2) (values (list #'identity (glx-memory-get-16-signed arg-ptr)) 2))
+        ((= mode 3) (values (list #'identity (glx-memory-get-32 arg-ptr)) 4))
+        ((= mode 5) (values (list (lambda (loaded-arg-ptr) (glx-memory-get-32 loaded-arg-ptr)) (glx-memory-get-byte arg-ptr)) 1))
+        ((= mode 6) (values (list (lambda (loaded-arg-ptr) (glx-memory-get-32 loaded-arg-ptr)) (glx-memory-get-16 arg-ptr)) 2))
+        ((= mode 7) (values (list (lambda (loaded-arg-ptr) (glx-memory-get-32 loaded-arg-ptr)) (glx-memory-get-32 arg-ptr)) 4))
+        ((= mode 8) (values (list (lambda (loaded-arg-ptr) (glx-value-pop)) nil) 0))
+        ((= mode 9) (values (list (lambda (loaded-arg-ptr) (glx-get-local-at-offset loaded-arg-ptr)) (glx-memory-get-byte arg-ptr)) 1))
+        ((= mode 10) (values (list (lambda (loaded-arg-ptr) (glx-get-local-at-offset loaded-arg-ptr)) (glx-memory-get-16 arg-ptr)) 2))
+        ((= mode 11) (values (list (lambda (loaded-arg-ptr) (glx-get-local-at-offset loaded-arg-ptr)) (glx-memory-get-32 arg-ptr)) 4))
+        ((= mode 13) (values (list (lambda (loaded-arg-ptr) (glx-memory-get-32 loaded-arg-ptr)) (glx-+ *glx-ram-start* (glx-memory-get-byte arg-ptr))) 1))
+        ((= mode 14) (values (list (lambda (loaded-arg-ptr) (glx-memory-get-32 loaded-arg-ptr)) (glx-+ *glx-ram-start* (glx-memory-get-16 arg-ptr))) 2))
+        ((= mode 15) (values (list (lambda (loaded-arg-ptr) (glx-memory-get-32 loaded-arg-ptr)) (glx-+ *glx-ram-start* (glx-memory-get-32 arg-ptr))) 4))
+        (t (signal 'glx-exec-error (list "Unsupported addressing mode" mode)))))
+
+(defun glx-compile-store-arg (mode arg-ptr)
+  (multiple-value-bind (store bytes-read)
+      (glx-decode-store-arg mode arg-ptr)
+    (values (list #'identity store) bytes-read)))
+
+(defun glx-compile-args (arg-spec addressing-modes-ptr)
+  (glx-process-args arg-spec addressing-modes-ptr #'glx-compile-load-arg #'glx-compile-store-arg))
+
+(defun glx-compile-instruction (ptr)
+  (multiple-value-bind (addressing-modes-ptr opcode)
+      (glx-get-opcode ptr)
+    (let ((instruction (gethash opcode glx-instructions)))
+      (if instruction
+          (multiple-value-bind (next-instruction compiled-args modes)
+              (glx-compile-args (glx-instruction-arg-list instruction) addressing-modes-ptr)
+            (values next-instruction (list (glx-instruction-function instruction) modes compiled-args)))
+        (signal 'glx-exec-error (list "Unknown opcode" opcode))))))
+
+(defun glx-execute-compiled-instruction (compiled-inst)
+  (apply (first compiled-inst) ; The instruction function
+         (second compiled-inst) ; The addressing modes used to load the args
+         (mapcar #'(lambda (compiled-arg) (funcall (first compiled-arg) (second compiled-arg)))
+                 (third compiled-inst)))) ; Call the functions to get the values for the instruction's arguments.
 
 (provide 'glx-exec)

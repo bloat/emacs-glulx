@@ -16,7 +16,7 @@
     `(let ((,result "")
            (,call-count 0)
            (*glx-iosys* (list (lambda (c) (incf ,call-count) (setq ,result (concat ,result (list c)))) glx-0 glx-2)))
-       (glx-get-string ,memptr)
+       (glx-get-string ,memptr #'glx-call-function-and-return-to-emacs)
        (should (equal ,result ,expected-result))
        (should (= ,call-count ,expected-call-count)))))
 
@@ -191,14 +191,14 @@
   "Unknown string type"
   :tags '(string)
   (let ((*glx-memory* [0]))
-    (should-error (glx-get-string glx-0) :type 'glx-string-error)))
+    (should-error (glx-get-string glx-0 #'glx-call-function-and-return-to-emacs) :type 'glx-string-error)))
 
 (ert-deftest use-terminator-node-for-compressed-string ()
   "Use terminator node for compressed string"
   :tags '(string)
   (let ((*glx-memory* [nil 0 0 0 13 0 0 0 1 0 0 0 13 45 #xe1])
         (*glx-string-table* glx-1))
-    (should-error (glx-get-string (glx-32 14)) :type 'glx-string-error)))
+    (should-error (glx-get-string (glx-32 14) #'glx-call-function-and-return-to-emacs) :type 'glx-string-error)))
 
 (ert-deftest test-indirect-function-reference ()
   "Test indirect function reference"

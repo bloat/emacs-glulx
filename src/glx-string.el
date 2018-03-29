@@ -52,13 +52,13 @@ by 0 byte. The characters are outputted using the current GLX-IOSYS-CHARFUN."
       (funcall (glx-iosys-charfun) char)
       (setq memptr (glx-+1 memptr)))))
 
-(defun glx-get-string (memptr)
+(defun glx-get-string (memptr function-caller)
   "Process the string encoded at the Glulx VM memory location given by the 32 bit MEMPTR.
 Individual characters from the string are passed to CHARFUN as they are loaded."
   (cond ((glx-uncompressed-string-p memptr)
          (glx-memory-get-string (glx-+1 memptr)))
         ((glx-compressed-string-p memptr)
-         (glx-uncompress-string (glx-get-bitstream (glx-+1 memptr))))
+         (glx-uncompress-string (glx-get-bitstream (glx-+1 memptr)) function-caller))
         ((glx-uncompressed-unicode-string-p memptr)
          (glx-memory-get-unicode-string (glx-+ glx-4 memptr)))
         (t (signal 'glx-string-error (list "Unknown string type" memptr (glx-memory-get-byte-int memptr))))))
@@ -83,10 +83,10 @@ at the Glulx VM memory location given by the 32 bit MEMPTR."
       (setf (cdr bitstream) 0))
     bit))
 
-(defun glx-string-or-function (memptr args)
+(defun glx-string-or-function (memptr args function-caller)
   (let ((obj-type (glx-memory-get-byte-int memptr)))
-    (cond ((or (= #xe0 obj-type) (= #xe1 obj-type) (= #xe2 obj-type)) (glx-get-string memptr))
-          ((or (= #xc0 obj-type) (= #xc1 obj-type)) (glx-call-function-and-return-to-emacs memptr args))
+    (cond ((or (= #xe0 obj-type) (= #xe1 obj-type) (= #xe2 obj-type)) (glx-get-string memptr function-caller))
+          ((or (= #xc0 obj-type) (= #xc1 obj-type)) (funcall function-caller memptr args))
           (t (signal 'glx-string-error (list "Unknown object type" obj-type memptr))))))
 
 (defun glx-string-node-args (memptr)
@@ -95,10 +95,12 @@ at the Glulx VM memory location given by the 32 bit MEMPTR."
       (setq memptr (glx-+ glx-4 memptr))
       (push (glx-memory-get-32 memptr) args))))
 
-(defun glx-uncompress-string (bitstream)
+(defun glx-uncompress-string (bitstream function-caller)
   "Uncompress a string by decoding the given BITSTREAM. Uses the
 string table at *GLX-STRING-TABLE*. Characters from the uncompressed 
-string are passed to the current GLX-IOSYS-CHARFUN"
+string are passed to the current GLX-IOSYS-CHARFUN. If there are any
+glulx functions to call while uncompressing, they are handled with the 
+FUNCTION-CALLER."
   (let ((result "")
         (node (glx-st-get-root-node-ptr)))
     (let ((node-type (glx-memory-get-byte-int node)))
@@ -112,13 +114,13 @@ string are passed to the current GLX-IOSYS-CHARFUN"
                (setq node (glx-st-get-root-node-ptr)))
               ((= 5 node-type) (glx-memory-get-unicode-string (glx-+1 node))
                (setq node (glx-st-get-root-node-ptr)))
-              ((= 8 node-type) (glx-string-or-function (glx-memory-get-32 (glx-+1 node)) nil)
+              ((= 8 node-type) (glx-string-or-function (glx-memory-get-32 (glx-+1 node)) nil function-caller)
                (setq node (glx-st-get-root-node-ptr)))
-              ((= 9 node-type) (glx-string-or-function (glx-memory-get-32 (glx-memory-get-32 (glx-+1 node))) nil)
+              ((= 9 node-type) (glx-string-or-function (glx-memory-get-32 (glx-memory-get-32 (glx-+1 node))) nil function-caller)
                (setq node (glx-st-get-root-node-ptr)))
-              ((= 10 node-type) (glx-string-or-function (glx-memory-get-32 (glx-+1 node)) (glx-string-node-args (glx-+ node glx-5)))
+              ((= 10 node-type) (glx-string-or-function (glx-memory-get-32 (glx-+1 node)) (glx-string-node-args (glx-+ node glx-5)) function-caller)
                (setq node (glx-st-get-root-node-ptr)))
-              ((= 11 node-type) (glx-string-or-function (glx-memory-get-32 (glx-memory-get-32 (glx-+1 node))) (glx-string-node-args (glx-+ node glx-5)))
+              ((= 11 node-type) (glx-string-or-function (glx-memory-get-32 (glx-memory-get-32 (glx-+1 node))) (glx-string-node-args (glx-+ node glx-5)) function-caller)
                (setq node (glx-st-get-root-node-ptr)))
               (t (signal 'glx-string-error (list "Unknown node type" node-type node))))
         (setq node-type (glx-memory-get-byte-int node))))))

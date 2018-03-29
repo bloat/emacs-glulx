@@ -20,7 +20,6 @@
 (when (featurep 'glx-stack) (unload-feature 'glx-stack t))
 (when (featurep 'glx-string) (unload-feature 'glx-string t))
 (when (featurep 'glx-value) (unload-feature 'glx-value t))
-(when (featurep 'glx-compile) (unload-feature 'glx-compile t))
 (when (featurep 'glx-accelerated) (unload-feature 'glx-accelerated t))
 
 (when (featurep 'glk-base) (unload-feature 'glk-base t))
@@ -41,7 +40,6 @@
 (require 'glx-stack)
 (require 'glx-string)
 (require 'glx-value)
-(require 'glx-compile)
 (require 'glx-accelerated)
 
 (require 'glk-base)
