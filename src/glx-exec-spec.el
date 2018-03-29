@@ -1,4 +1,4 @@
-;;; emacs glx
+;;; emacs glx  -*- lexical-binding: t; -*-
 ;;
 ;; Copyright (C) 2008, 2009 Andrew Cowper
 ;;
@@ -237,6 +237,7 @@
   (let ((*glx-memory* [#xc0 0 0 #x31 0])
         (*glx-stack* nil)
         (*glx-compile* nil)
-        (*glx-accelerated-functions* (make-hash-table)))
+        (*glx-accelerated-functions* (make-hash-table))
+        (*glx-compiled-instructions* (make-hash-table)))
     ;; This will run off the end of the memory vector if it doesn't return properly.
     (glx-call-function-and-return-to-emacs glx-0 nil)))

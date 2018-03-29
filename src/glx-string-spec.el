@@ -1,4 +1,4 @@
-;;; emacs glx
+;;; emacs glx  -*- lexical-binding: t; -*-
 ;;
 ;; Copyright (C) 2008, 2009 Andrew Cowper
 ;;
@@ -13,9 +13,9 @@
   (declare (indent 2))
   (let ((result (gensym))
         (call-count (gensym)))
-    `(let ((,result "")
-           (,call-count 0)
-           (*glx-iosys* (list (lambda (c) (incf ,call-count) (setq ,result (concat ,result (list c)))) glx-0 glx-2)))
+    `(let* ((,result "")
+            (,call-count 0)
+            (*glx-iosys* (list (lambda (c) (incf ,call-count) (setq ,result (concat ,result (list c)))) glx-0 glx-2)))
        (glx-get-string ,memptr #'glx-call-function-and-return-to-emacs)
        (should (equal ,result ,expected-result))
        (should (= ,call-count ,expected-call-count)))))
@@ -204,58 +204,56 @@
   "Test indirect function reference"
   :tags '(string)
 
-  (cl-letf ((called-memptr nil)
-            (called-args nil)
-            ((symbol-function 'glx-call-function-and-return-to-emacs) (lambda (memptr args)
-                                                                        (setq called-memptr memptr)
-                                                                        (setq called-args args))))
-    (let ((*glx-memory*
-           [nil
-            0 0 0 52                    ;4
-            0 0 0 7                     ;8
-            0 0 0 13                    ;12
-            0 0 0 0 22 0 0 0 31         ;21
-            0 0 0 0 40 0 0 0 45         ;30
-            0 0 0 0 46 0 0 0 51         ;39
-            3 ?A ?B ?C 0                ;44
-            1                           ;45
-            8 0 0 0 55                  ;50
-            2 ?P                        ;52
-            #xe1 #b10000100
-            #xc0])
-          (*glx-string-table* glx-1))
-      (check-string "ABCABC" 6 (glx-32 53))
-      (should (equal called-memptr (glx-32 55)))
-      (should-not called-args))))
+  (let (called-memptr called-args)
+    (cl-letf (((symbol-function 'glx-call-function-and-return-to-emacs) (lambda (memptr args)
+                                                                          (setq called-memptr memptr)
+                                                                          (setq called-args args))))
+      (let ((*glx-memory*
+             [nil
+              0 0 0 52                    ;4
+              0 0 0 7                     ;8
+              0 0 0 13                    ;12
+              0 0 0 0 22 0 0 0 31         ;21
+              0 0 0 0 40 0 0 0 45         ;30
+              0 0 0 0 46 0 0 0 51         ;39
+              3 ?A ?B ?C 0                ;44
+              1                           ;45
+              8 0 0 0 55                  ;50
+              2 ?P                        ;52
+              #xe1 #b10000100
+              #xc0])
+            (*glx-string-table* glx-1))
+        (check-string "ABCABC" 6 (glx-32 53))
+        (should (equal called-memptr (glx-32 55)))
+        (should-not called-args)))))
 
 (ert-deftest test-double-indirect-function-reference ()
   "Test double indirect function reference"
   :tags '(string)
 
-  (cl-letf ((called-memptr nil)
-            (called-args nil)
-            ((symbol-function 'glx-call-function-and-return-to-emacs) (lambda (memptr args)
-                                                                        (setq called-memptr memptr)
-                                                                        (setq called-args args))))
-    (let ((*glx-memory*
-           [nil
-            0 0 0 52                    ;4
-            0 0 0 7                     ;8
-            0 0 0 13                    ;12
-            0 0 0 0 22 0 0 0 31         ;21
-            0 0 0 0 40 0 0 0 45         ;30
-            0 0 0 0 46 0 0 0 51         ;39
-            3 ?A ?B ?C 0                ;44
-            1                           ;45
-            9 0 0 0 56                  ;50
-            2 ?P                        ;52
-            #xe1 #b10000100
-            #xc0 
-            0 0 0 55])
-          (*glx-string-table* glx-1))
-      (check-string "ABCABC" 6 (glx-32 53))
-      (should (equal called-memptr (glx-32 55)))
-      (should-not called-args))))
+  (let (called-memptr called-args)
+    (cl-letf (((symbol-function 'glx-call-function-and-return-to-emacs) (lambda (memptr args)
+                                                                          (setq called-memptr memptr)
+                                                                          (setq called-args args))))
+      (let ((*glx-memory*
+             [nil
+              0 0 0 52                    ;4
+              0 0 0 7                     ;8
+              0 0 0 13                    ;12
+              0 0 0 0 22 0 0 0 31         ;21
+              0 0 0 0 40 0 0 0 45         ;30
+              0 0 0 0 46 0 0 0 51         ;39
+              3 ?A ?B ?C 0                ;44
+              1                           ;45
+              9 0 0 0 56                  ;50
+              2 ?P                        ;52
+              #xe1 #b10000100
+              #xc0 
+              0 0 0 55])
+            (*glx-string-table* glx-1))
+        (check-string "ABCABC" 6 (glx-32 53))
+        (should (equal called-memptr (glx-32 55)))
+        (should-not called-args)))))
 
 (ert-deftest test-indirect-string-reference-with-args ()
   "Test indirect string reference with args"
@@ -304,56 +302,54 @@
   "Test indirect function reference with args"
   :tags '(string)
 
-  (cl-letf ((called-memptr nil)
-            (called-args nil)
-            ((symbol-function 'glx-call-function-and-return-to-emacs) (lambda (memptr args)
-                                                                        (setq called-memptr memptr)
-                                                                        (setq called-args args))))
-    (let ((*glx-memory*
-           [nil
-            0 0 0 52                    ;4
-            0 0 0 7                     ;8
-            0 0 0 13                    ;12
-            0 0 0 0 22 0 0 0 31         ;21
-            0 0 0 0 40 0 0 0 45         ;30
-            0 0 0 0 46 0 0 0 63         ;39
-            3 ?A ?B ?C 0                ;44
-            1                           ;45
-            10 0 0 0 67 0 0 0 2 0 0 0 4 0 0 0 8 ;62
-            2 ?P                        ;64
-            #xe1 #b10000100
-            #xc0])
-          (*glx-string-table* glx-1))
-      (check-string "ABCABC" 6 (glx-32 65))
-      (should (equal called-memptr (glx-32 67)))
-      (should (equal called-args `(,glx-4 ,glx-8))))))
+  (let (called-memptr called-args)
+    (cl-letf (((symbol-function 'glx-call-function-and-return-to-emacs) (lambda (memptr args)
+                                                                          (setq called-memptr memptr)
+                                                                          (setq called-args args))))
+      (let ((*glx-memory*
+             [nil
+              0 0 0 52                    ;4
+              0 0 0 7                     ;8
+              0 0 0 13                    ;12
+              0 0 0 0 22 0 0 0 31         ;21
+              0 0 0 0 40 0 0 0 45         ;30
+              0 0 0 0 46 0 0 0 63         ;39
+              3 ?A ?B ?C 0                ;44
+              1                           ;45
+              10 0 0 0 67 0 0 0 2 0 0 0 4 0 0 0 8 ;62
+              2 ?P                        ;64
+              #xe1 #b10000100
+              #xc0])
+            (*glx-string-table* glx-1))
+        (check-string "ABCABC" 6 (glx-32 65))
+        (should (equal called-memptr (glx-32 67)))
+        (should (equal called-args `(,glx-4 ,glx-8)))))))
 
 (ert-deftest test-double-indirect-function-reference-with-args ()
   "Test double indirect function reference with args"
   :tags '(string)
 
-  (cl-letf ((called-memptr nil)
-            (called-args nil)
-            ((symbol-function 'glx-call-function-and-return-to-emacs) (lambda (memptr args)
-                                                                        (setq called-memptr memptr)
-                                                                        (setq called-args args))))
-    (let ((*glx-memory*
-           [nil
-            0 0 0 52                    ;4
-            0 0 0 7                     ;8
-            0 0 0 13                    ;12
-            0 0 0 0 22 0 0 0 31         ;21
-            0 0 0 0 40 0 0 0 45         ;30
-            0 0 0 0 46 0 0 0 51         ;39
-            3 ?A ?B ?C 0                ;44
-            1                           ;45
-            11 0 0 0 68 0 0 0 2 0 0 0 4 0 0 0 8 ;62
-            2 ?P                        ;64
-            #xe1 #b10000100
-            #xc0 
-            0 0 0 67])
-          (*glx-string-table* glx-1))
-      (check-string "ABCABC" 6 (glx-32 65))
-      (should (equal called-memptr (glx-32 67)))
-      (should (equal called-args `(,glx-4 ,glx-8))))))
+  (let (called-memptr called-args)
+    (cl-letf (((symbol-function 'glx-call-function-and-return-to-emacs) (lambda (memptr args)
+                                                                          (setq called-memptr memptr)
+                                                                          (setq called-args args))))
+      (let ((*glx-memory*
+             [nil
+              0 0 0 52                    ;4
+              0 0 0 7                     ;8
+              0 0 0 13                    ;12
+              0 0 0 0 22 0 0 0 31         ;21
+              0 0 0 0 40 0 0 0 45         ;30
+              0 0 0 0 46 0 0 0 51         ;39
+              3 ?A ?B ?C 0                ;44
+              1                           ;45
+              11 0 0 0 68 0 0 0 2 0 0 0 4 0 0 0 8 ;62
+              2 ?P                        ;64
+              #xe1 #b10000100
+              #xc0 
+              0 0 0 67])
+            (*glx-string-table* glx-1))
+        (check-string "ABCABC" 6 (glx-32 65))
+        (should (equal called-memptr (glx-32 67)))
+        (should (equal called-args `(,glx-4 ,glx-8)))))))
 

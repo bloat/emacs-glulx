@@ -1,4 +1,4 @@
-;;; emacs glx
+;;; emacs glx  -*- lexical-binding: t; -*-
 ;;
 ;; Copyright (C) 2008, 2009 Andrew Cowper
 ;;

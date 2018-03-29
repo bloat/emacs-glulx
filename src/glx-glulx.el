@@ -1,4 +1,4 @@
-;;; emacs glx
+;;; emacs glx  -*- lexical-binding: t; -*-
 ;;
 ;; Copyright (C) 2008, 2009 Andrew Cowper
 ;;
@@ -106,11 +106,12 @@ The value is truncated to the given number of bytes."
             string)))
 
 (defun glx-log (message &rest values)
-  (unless *glx-log-buffer*
-    (setq *glx-log-buffer* (get-buffer-create "*glx-log*")))
-  (save-excursion
-    (set-buffer *glx-log-buffer*)
-    (insert (apply #'format message values) ?\n)))
+  ;; (unless *glx-log-buffer*
+  ;;   (setq *glx-log-buffer* (get-buffer-create "*glx-log*")))
+  ;; (save-excursion
+  ;;   (set-buffer *glx-log-buffer*)
+  ;;   (insert (apply #'format message values) ?\n))
+  )
 
 (defun glx-search-get-key (key key-size options)
   (if (= 0 (logand 1 (glx-32->int options)))
