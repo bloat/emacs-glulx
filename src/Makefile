@@ -25,8 +25,11 @@ glx-exec.elc: glx-exec.el glx-stack.elc
 glx-instructions.elc: glx-instructions.el glx-value.elc glx-glulx.elc glx-exec.elc glx-string.elc glx-glk.elc
 	${EMACS} "(progn (add-to-list 'load-path \".\") (add-to-list 'load-path \"${GLK}\") (byte-compile-file \"glx-instructions.el\"))"
 
-glx-compile.elc: glx-instructions.elc
+glx-compile.elc: glx-compile.el glx-instructions.elc
 	${EMACS} "(progn (add-to-list 'load-path \".\") (byte-compile-file \"glx-compile.el\"))"
 
-all: glx-value.elc glx-glulx.elc glx-stack.elc glx-exec.elc glx-instructions.elc glx-value.elc glx-string.elc glx-glk.elc glx-load.elc glx-compile.elc
+glx-accelerated.elc: glx-accelerated.el glx-glulx.elc
+	${EMACS} "(progn (add-to-list 'load-path \".\") (byte-compile-file \"glx-accelerated.el\"))"
+
+all: glx-value.elc glx-glulx.elc glx-stack.elc glx-exec.elc glx-instructions.elc glx-value.elc glx-string.elc glx-glk.elc glx-load.elc glx-compile.elc glx-accelerated.elc
 

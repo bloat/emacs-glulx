@@ -275,7 +275,8 @@ entire glk call."
 
 (defun glx-32->glk-gestalt-selector (value)
   (case (glx-32->int value)
-    (0 'glk-gestalt-version)))
+    (0 'glk-gestalt-version)
+    (15 'glk-gestalt-unicode)))
 
 (defun glx-glk-opq->glx-32 (value)
   (if (null value)

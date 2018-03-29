@@ -23,7 +23,8 @@
 (define-derived-mode glk-mode nil "GLK"
   "Major mode for interacting with GLK based programs.
 \\{glk-mode-map}"
-  (use-hard-newlines))
+  (use-hard-newlines)
+  (visual-line-mode))
 
 ;; All GLK Windows
 
@@ -49,9 +50,8 @@
   (let ((buffer (if (eq type 'glk-wintype-pair)
                     nil
                   (generate-new-buffer "*glk*"))))
-    (when (eq 'glk-wintype-text-grid type)
-      (save-current-buffer
-        (set-buffer buffer)
+    (if (eq 'glk-wintype-text-grid type)
+      (with-current-buffer buffer
         (setq buffer-read-only t)))
     (let ((new-window (glki-opq-window-create new-window-id)))
       (glki-opq-window-set-buffer new-window buffer)
@@ -81,8 +81,7 @@
 (defun glki-set-glk-mode (glk-window)
   "Sets glk-mode on the buffer for the given glk-window"
   (when (glki-opq-window-get-buffer glk-window)
-    (save-current-buffer
-      (set-buffer (glki-opq-window-get-buffer glk-window))
+    (with-current-buffer (glki-opq-window-get-buffer glk-window)
       (glk-mode))))
 
 (defun glki-get-emacs-window (glk-window)
