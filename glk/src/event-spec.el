@@ -43,8 +43,7 @@
       (progn
         (glki-generate-new-window 'glk-wintype-text-buffer1 'window 'stream 0)
         (setq glk-root-window 'window)
-        (save-excursion
-          (set-buffer (glki-opq-window-get-buffer 'window))
+        (with-current-buffer (glki-opq-window-get-buffer 'window)
           (let ((event (glki-create-line-input-event "go north" '0x3456)))
             (should (equal event '(glk-evtype-lineinput window 8 0 0x3456 "go north")))
             (should (equal (glki-get-line-event-window event) 'window)))))

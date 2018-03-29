@@ -11,8 +11,7 @@
 
 (defun glki-log (log)
   (when (get-buffer "*glk-log*")
-    (save-excursion
-      (set-buffer "*glk-log*")
+    (with-current-buffer "*glk-log*"
       (insert (if (stringp log) log (prin1-to-string log)))
       (newline))))
 

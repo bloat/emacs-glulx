@@ -11,7 +11,6 @@
 
 (require 'glk-opaque)
 (require 'glk-stream)
-(require 'cl)
 (require 'simple)
 
 (defvar glk-frame nil "The frame for GLK windows")
@@ -161,9 +160,8 @@
   "In a Text Grid window sets the current cursor position"
   (let ((inhibit-read-only t))
     (when (eq 'glk-wintype-text-grid (glki-opq-window-get-type win))
-      (save-current-buffer
-        (set-buffer (glki-opq-window-get-buffer win))
-        (goto-line (+ 1 ypos))
+      (with-current-buffer (glki-opq-window-get-buffer win)
+        (forward-line (- (+ 1 ypos) (line-number-at-pos)))
         (while (< (line-number-at-pos) (+ 1 ypos))
           (insert "\n"))
         (move-to-column xpos t)))))

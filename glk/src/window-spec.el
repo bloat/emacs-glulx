@@ -25,7 +25,7 @@
                                              (right-window-p (window) (coordinates-in-window-p (cons (- (frame-width glk-frame) 1) 1) window))
                                              (left-window-p (window) (coordinates-in-window-p (cons 0 1) window))
                                              (number-of-windows-on-glk-frame () (length (window-list glk-frame 'no-minibuffer (first-window))))
-                                             (get-point-in-window (windowid) (save-current-buffer (set-buffer (glki-opq-window-get-buffer windowid)) (point))))
+                                             (get-point-in-window (windowid) (with-current-buffer (glki-opq-window-get-buffer windowid) (list (line-number-at-pos) (current-column)))))
                                    ,@body))
            
 
@@ -263,12 +263,12 @@
     (with-glk-start-and-end
      (create-two-windows-fixed 'glk-winmethod-above 5 'glk-wintype-text-grid)
      (glk-window-move-cursor 'window2 0 0)
-     (should (= (get-point-in-window 'window2) 1))
+     (should (equal (get-point-in-window 'window2) (list 1 0)))
      (glk-window-move-cursor 'window2 1 0)
-     (should (= (get-point-in-window 'window2) 2))
+     (should (equal (get-point-in-window 'window2) (list 1 1)))
      (glk-window-move-cursor 'window2 0 1)
-     (should (= (get-point-in-window 'window2) 3))
+     (should (equal (get-point-in-window 'window2) (list 2 0)))
      (glk-window-move-cursor 'window2 2 0)
-     (should (= (get-point-in-window 'window2) 3))
+     (should (equal (get-point-in-window 'window2) (list 1 2)))
      (glk-window-move-cursor 'window2 1 1)
-     (should (= (get-point-in-window 'window2) 5)))))
+     (should (equal (get-point-in-window 'window2) (list 2 1))))))

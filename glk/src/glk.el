@@ -35,8 +35,6 @@
   (setq glk-current-stream nil)
   (when (get-buffer "*glk-log*") (kill-buffer "*glk-log*")))
 
-(defun glki-set-game-file-stream (p))
-
 (defun glk-exit ()
   (glki-end))
 
