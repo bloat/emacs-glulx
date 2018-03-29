@@ -24,11 +24,11 @@
     (list (length result) result)))
 
 (defun glk-buffer-to-title-case-uni (string lowerrest)
-  (let ((result)
-        (concat (list (upcase (aref string 0)))
-                (if lowerrest
-                    (downcase (substring string 1))
-                  (substring string 1))))
+  (let ((result
+         (concat (list (upcase (aref string 0)))
+                 (if lowerrest
+                     (downcase (substring string 1))
+                   (substring string 1)))))
     (list (length result) result)))
 
 (provide 'glk-encoding)

@@ -12,6 +12,7 @@
 (require 'glk-opaque)
 (require 'glk-stream)
 (require 'cl)
+(require 'simple)
 
 (defvar glk-frame nil "The frame for GLK windows")
 

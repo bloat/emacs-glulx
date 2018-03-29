@@ -15,7 +15,7 @@ glk-opaque.elc: glk-opaque.el
 glk-file.elc: glk-file.el glk-opaque.elc
 	${EMACS} "(progn (add-to-list 'load-path \".\") (byte-compile-file \"glk-file.el\"))"
 
-glk-stream.elc: glk-stream.el glk-opaque.elc
+glk-stream.elc: glk-stream.el glk-opaque.elc glk-file.elc
 	${EMACS} "(progn (add-to-list 'load-path \".\") (byte-compile-file \"glk-stream.el\"))"
 
 glk-window.elc: glk-window.el glk-opaque.elc glk-stream.elc
@@ -29,4 +29,6 @@ glk.elc: glk.el glk-window.elc
 
 all: glk-customize.elc glk.elc glk-window.elc glk-event.elc glk-stream.elc glk-opaque.elc glk-customize.elc glk-base.elc glk-encoding.elc glk-file.elc
 
+clean:
+	rm -v *.elc
 

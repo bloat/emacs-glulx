@@ -39,12 +39,10 @@
 
 (defun glki-get-line-event-request (glk-window)
   "Returns any line event request on the given window"
-  (glx-log "Getting line event request %s" (get glk-window 'glk-line-event))
   (get glk-window 'glk-line-event))
 
 (defun glki-add-line-event-request (window-id c-buffer)
   "Mark the window has having a line event request on it"
-  (glx-log "adding line even request %s %s" window-id c-buffer)
   (put window-id 'glk-line-event c-buffer))
 
 (defun glki-clear-line-event-request (window-id)
@@ -135,7 +133,6 @@
       (when event-request
         (glki-add-event-to-queue
          (let ((new-event (glki-create-line-input-event event-text (glki-get-c-buffer event-request))))
-           (glx-log "new event : %s" new-event)
            new-event))))))
 
 (unless glk-mode-map

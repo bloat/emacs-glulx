@@ -10,6 +10,7 @@
 ;; License as distributed with Emacs (press C-h C-c to view it).
 
 (require 'glk-opaque)
+(require 'glk-file)
 
 (defvar glk-current-stream nil
   "The current stream for reading and writing.
