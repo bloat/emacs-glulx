@@ -8,15 +8,6 @@ information on Glulx and GLK see:
  http://www.eblong.com/zarf/glulx/
  http://www.eblong.com/zarf/glk/
 
-Also contained here is a fork of the GLK Frotz implementation of
-Infocom's Z-Machine virtual machine maintained by Tor Andersson. This
-version of GLK Frotz has been modified only to make it work with the
-Emacs GLK implementation given here. Its README and License are
-reproduced here:
-
- glk/src/elisp-glk-frotz/README
- glk/src/elisp-glk-frotz/COPYING
-
 Everything here (everything written by me that is) is incomplete,
 ill-considered, and half-baked.
 
