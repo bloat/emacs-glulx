@@ -39,8 +39,7 @@
   (glki-end))
 
 (defun glk-gestalt (sel var)
-  (case sel
-    ('glk-gestalt-version #x700)
-    ('glk-gestalt-unicode 1)))
+  (cond ((eq sel 'glk-gestalt-version) #x700)
+        ((eq sel 'glk-gestalt-unicode) 1)))
 
 (provide 'glk)

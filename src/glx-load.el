@@ -20,8 +20,7 @@
 (defvar *glx-unexpected-exit* nil "Is the VM exiting unexpectedly, or because it's waiting for player input")
 
 (defun glx-load-story-file (file-name)
-  (save-excursion
-    (set-buffer (get-buffer-create "*glulx*"))
+  (with-current-buffer (get-buffer-create "*glulx*")
     (erase-buffer)
     (insert-file-contents-literally file-name)
     (vconcat (mapcar (lambda (x) (logand 255 x)) (buffer-substring (point-min) (point-max))))))
@@ -63,9 +62,7 @@
   (setq *glx-compile* t)
   
   (setq glk-event-reentry-function #'glx-glk-event-callback)
-  (save-excursion
-    (set-buffer *glx-log-buffer*)
-    (erase-buffer))
+  (with-current-buffer *glx-log-buffer* (erase-buffer))
   (random t)
   (unwind-protect
       (progn

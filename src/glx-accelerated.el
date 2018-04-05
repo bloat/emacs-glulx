@@ -25,7 +25,7 @@
         (cla glx-0))
     (when (not (glx-0-p (glx-bitand id (glx-32 0 0 255 255))))
       (setq cla (glx-memory-get-32 (glx-+ (glx-acc-param 0)
-                                          (glx-*-byte (glx-bitand id (glx-32 255 255)) 4))))
+                                          (glx-* (glx-bitand id (glx-32 255 255)) 4))))
       (if (glx-0-p (glx-accelerated-oc-cl-5 obj cla))
           (setq result glx-0)
         (setq id (glx-ushiftr id (glx-32 16)))
@@ -48,7 +48,7 @@
         (cla glx-0))
     (when (not (glx-0-p (glx-bitand id (glx-32 0 0 255 255))))
       (setq cla (glx-memory-get-32 (glx-+ (glx-acc-param 0)
-                                          (glx-*-byte (glx-bitand id (glx-32 255 255)) 4))))
+                                          (glx-* (glx-bitand id (glx-32 255 255)) 4))))
       (if (glx-0-p (glx-accelerated-oc-cl-11 obj cla))
           (setq result glx-0)
         (setq id (glx-ushiftr id (glx-32 16)))
@@ -96,7 +96,7 @@
   (let ((prop (glx-acclerated-util-get-prop-old obj id)))
     (if (glx-0-p prop)
         glx-0
-      (glx-*-byte (glx-memory-get-16 (glx-+ prop glx-2)) 4))))
+      (glx-* (glx-memory-get-16 (glx-+ prop glx-2)) 4))))
 
 (defun glx-accelerated-oc-cl-5 (obj cla)
   (let ((zr (glx-accelerated-z-region-1 obj)))
@@ -133,14 +133,14 @@
                   (while (and (< jx inlistlen) (glx-0-p result))
                     (if (equal cla (glx-memory-get-32 (glx-+ inlist (glx-32 (* 4 jx)))))
                         (setq result glx-1)
-                      (incf jx)))
+                      (cl-incf jx)))
                   result)))))))
 
 (defun glx-accelerated-rv-pr-6 (obj id)
   (let ((addr (glx-accelerated-ra-pr-3 obj id)))
     (if (glx-0-p addr)
         (if (and (glx-pos-p id) (glx-32-u< id (glx-acc-param 1)))
-            (glx-memory-get-32 (glx-+ (glx-acc-param 8) (glx-*-byte id 4)))
+            (glx-memory-get-32 (glx-+ (glx-acc-param 8) (glx-* id 4)))
           (signal 'glx-accelerated-error (list "Tried to read (something)" obj id)))
       (glx-memory-get-32 addr))))
 
@@ -166,11 +166,11 @@
 (defun glx-accelerated-cp-tab-8 (obj id)
   (when (not (equal glx-1 (glx-accelerated-z-region-1 obj)))
     (signal 'glx-accelerated-error (list "CP tab was not given an object at" obj)))
-  (multiple-value-bind (div rem) (glx-/ (glx-acc-param 7) glx-4)
-    (let ((otab (glx-memory-get-32 (glx-+ obj (glx-*-byte (glx-+ glx-3 div) 4)))))
-      (if (glx-0-p otab)
-          glx-0
-        (glx-memory-binary-search id glx-2 (glx-+ otab glx-4) (glx-32 10) (glx-memory-get-32 otab) glx-0 glx-0)))))
+  (let* ((div (car (glx-/ (glx-acc-param 7) glx-4)))
+         (otab (glx-memory-get-32 (glx-+ obj (glx-* (glx-+ glx-3 div) 4)))))
+    (if (glx-0-p otab)
+        glx-0
+      (glx-memory-binary-search id glx-2 (glx-+ otab glx-4) (glx-32 10) (glx-memory-get-32 otab) glx-0 glx-0))))
 
 (defun glx-accelerated-ra-pr-9 (obj id)
   (let ((prop (glx-acclerated-util-get-prop-new obj id)))
@@ -182,7 +182,7 @@
   (let ((prop (glx-acclerated-util-get-prop-new obj id)))
     (if (glx-0-p prop)
         glx-0
-      (glx-*-byte (glx-memory-get-16 (glx-+ prop glx-2)) 4))))
+      (glx-* (glx-memory-get-16 (glx-+ prop glx-2)) 4))))
 
 (defun glx-accelerated-oc-cl-11 (obj cla)
   (let ((zr (glx-accelerated-z-region-1 obj)))
@@ -219,14 +219,14 @@
                   (while (and (< jx inlistlen) (glx-0-p result))
                     (if (equal cla (glx-memory-get-32 (glx-+ inlist (glx-32 (* 4 jx)))))
                         (setq result glx-1)
-                      (incf jx)))
+                      (cl-incf jx)))
                   result)))))))
 
 (defun glx-accelerated-rv-pr-12 (obj id)
   (let ((addr (glx-accelerated-ra-pr-9 obj id)))
     (if (glx-0-p addr)
         (if (and (glx-pos-p id) (glx-32-u< id (glx-acc-param 1)))
-            (glx-memory-get-32 (glx-+ (glx-acc-param 8) (glx-*-byte id 4)))
+            (glx-memory-get-32 (glx-+ (glx-acc-param 8) (glx-* id 4)))
           (signal 'glx-accelerated-error (list "Tried to read (something)" obj id)))
       (glx-memory-get-32 addr))))
 

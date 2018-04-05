@@ -251,13 +251,13 @@
         (*glx-undo* nil))
     (glx-save-undo 'store-function)
     (should (equal *glx-undo* '([0 0 0 0]
-                                ((nil (((0 0 0 0) 0 0 0 0))))
+                                ((nil ((0 . 0))))
                                 (0 3 4 5)
                                 store-function)))
     (glx-value-push glx-4)
     (glx-memory-set glx-0 glx-5 4)
     (should (equal *glx-undo* '([0 0 0 0]
-                                ((nil (((0 0 0 0) 0 0 0 0))))
+                                ((nil ((0 . 0))))
                                 (0 3 4 5)
                                 store-function)))))
 
@@ -281,7 +281,7 @@
       (should (equal (glx-restore-undo) t))
       (should (equal *glx-undo* nil))
       (should (equal *glx-memory* [0 0 0 0]))
-      (should (equal *glx-stack* '((nil (((0 0 0 0) 0 0 0 0))))))
+      (should (equal *glx-stack* '((nil ((0 . 0))))))
       (should (equal *glx-pc* '(0 3 4 5)))
       (should (equal was-called (list 'store-arg (glx-32 -1) 4))))))
 
@@ -300,7 +300,7 @@
       (should (equal (glx-restore-undo) t))
       (should (equal *glx-undo* nil))
       (should (equal *glx-memory* [1 2 13 14 15 16 7 8]))
-      (should (equal *glx-stack* '((nil (((0 0 0 0) 0 0 0 0))))))
+      (should (equal *glx-stack* '((nil ((0 . 0))))))
       (should (equal *glx-pc* '(0 3 4 5)))
       (should (equal was-called (list 'store-arg (glx-32 -1) 4))))))
 

@@ -116,7 +116,7 @@
   "storing a closed memory stream into glulx memory"
   :tags '(glk)
   (let ((*glx-memory* (make-vector 14 0)))
-    (glx-glk-store-closed-stream '(t 0 5 nil (0 0 0 9) "hello") glx-1)
+    (glx-glk-store-closed-stream '(t 0 5 nil 9 "hello") glx-1)
     (should (equal *glx-memory*
                    [0 0 0 0 0
                       0 0 0 5
@@ -127,7 +127,7 @@
   :tags '(glk)
   (let ((*glx-memory* (make-vector 5 0))
         (*glx-stack* (list (list (list)))))
-    (glx-glk-store-closed-stream '(t 0 5 nil (0 0 0 0) "hello") (glx-32 -1))
+    (glx-glk-store-closed-stream '(t 0 5 nil 0 "hello") (glx-32 -1))
     (should (equal *glx-memory* [104 101 108 108 111]))
     (should (equal *glx-stack* (list (list (list glx-5 glx-0)))))))
 

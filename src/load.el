@@ -9,11 +9,11 @@
 ;; This file is licensed under the terms of the GNU General Public
 ;; License as distributed with Emacs (press C-h C-c to view it).
 
-;; (byte-recompile-directory "~/git/emacs-glulx/src" 0 t)
-;; (byte-recompile-directory "~/git/emacs-glulx/glk/src" 0 t)
-
-(add-to-list 'load-path (expand-file-name "~/git/emacs-glulx/src"))
 (add-to-list 'load-path (expand-file-name "~/git/emacs-glulx/glk/src"))
+(add-to-list 'load-path (expand-file-name "~/git/emacs-glulx/src"))
+
+;; (byte-recompile-directory "~/git/emacs-glulx/glk/src" 0 t)
+;; (byte-recompile-directory "~/git/emacs-glulx/src" 0 t)
 
 (when (featurep 'glx-exec) (unload-feature 'glx-exec t))
 (when (featurep 'glx-glk) (unload-feature 'glx-glk t))

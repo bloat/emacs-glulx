@@ -35,7 +35,7 @@
 ;; Creating, getting hold of, and deleting windows
 
 (defun find-window (predicate)
-  (some predicate glki-opq-window))
+  (cl-some predicate glki-opq-window))
 
 (defun glki-get-window-id (buffer)
   "Returns the glk window id for the given emacs buffer"

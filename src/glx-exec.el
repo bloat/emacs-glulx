@@ -14,18 +14,18 @@
 (defconst glx-instructions (make-hash-table))
 
 (defsubst glx-instruction-name (instruction)
-  (first instruction))
+  (car instruction))
 
 (defsubst glx-instruction-arg-list (instruction)
-  (second instruction))
+  (cadr instruction))
 
 (defsubst glx-instruction-function (instruction)
-  (third instruction))
+  (nth 2 instruction))
 
 (put 'glx-exec-error 'error-conditions '(error glx-error glx-exec-error))
 (put 'glx-exec-error 'error-message "Glulx execution error")
 
-(defvar *glx-compile* t)
+(defvar *glx-compile* nil)
 
 (defun glx-get-opcode (memptr)
   "An opcode can encoded into 1, 2 or 4 bytes. Returns the location of the data following
@@ -33,52 +33,44 @@ the opcode at the location MEMPTR (depending on how long the opcode is), and the
   (let ((opcode-type (lsh (glx-memory-get-byte-int memptr) -6)))
     ;; TODO this is not safe if you change how a 32 bit is represented.
     (cond ((= opcode-type 3) (let ((opcode (glx-32-get-bytes-as-list-big-endian (glx-memory-get-32 memptr))))
-                               (setf (first opcode) (- (first opcode) #xc0))
-                               (values (glx-+ memptr glx-4) (glx-32->int (apply #'glx-32 (reverse opcode))))))
-          ((= opcode-type 2) (values (glx-+ memptr glx-2) (- (glx-memory-get-16-int memptr) #x8000)))
-          (t (values (glx-+1 memptr) (glx-memory-get-byte-int memptr))))))
+                               (setf (car opcode) (- (car opcode) #xc0))
+                               (list (glx-+ memptr glx-4) (glx-32->int (apply #'glx-32 (reverse opcode))))))
+          ((= opcode-type 2) (list (glx-+ memptr glx-2) (- (glx-memory-get-16-int memptr) #x8000)))
+          (t (list (glx-+1 memptr) (glx-memory-get-byte-int memptr))))))
 
 (defun glx-get-mode (addressing-modes-ptr low-bits)
   (let ((mode-byte (glx-memory-get-byte-int addressing-modes-ptr)))
     (if low-bits (logand mode-byte #xf) (lsh mode-byte -4))))
 
 (defun glx-decode-load-arg (mode arg-ptr)
-  (cond ((= mode 0) (values glx-0 0))
-        ((= mode 1) (values (glx-memory-get-byte-signed arg-ptr) 1))
-        ((= mode 2) (values (glx-memory-get-16-signed arg-ptr) 2))
-        ((= mode 3) (values (glx-memory-get-32 arg-ptr) 4))
-        ((= mode 5) (values (glx-memory-get-32 (glx-memory-get-byte arg-ptr)) 1))
-        ((= mode 6) (values (glx-memory-get-32 (glx-memory-get-16 arg-ptr)) 2))
-        ((= mode 7) (values (glx-memory-get-32 (glx-memory-get-32 arg-ptr)) 4))
-        ((= mode 8) (values (glx-value-pop) 0))
-        ((= mode 9) (values (glx-get-local-at-offset (glx-memory-get-byte arg-ptr)) 1))
-        ((= mode 10) (values (glx-get-local-at-offset (glx-memory-get-16 arg-ptr)) 2))
-        ((= mode 11) (values (glx-get-local-at-offset (glx-memory-get-32 arg-ptr)) 4))
-        ((= mode 13) (values (glx-memory-get-32 (glx-+ *glx-ram-start* (glx-memory-get-byte arg-ptr))) 1))
-        ((= mode 14) (values (glx-memory-get-32 (glx-+ *glx-ram-start* (glx-memory-get-16 arg-ptr))) 2))
-        ((= mode 15) (values (glx-memory-get-32 (glx-+ *glx-ram-start* (glx-memory-get-32 arg-ptr))) 4))
+  (cond ((= mode 0) (list glx-0 0))
+        ((= mode 1) (list (glx-memory-get-byte-signed arg-ptr) 1))
+        ((= mode 2) (list (glx-memory-get-16-signed arg-ptr) 2))
+        ((= mode 3) (list (glx-memory-get-32 arg-ptr) 4))
+        ((= mode 5) (list (glx-memory-get-32 (glx-memory-get-byte arg-ptr)) 1))
+        ((= mode 6) (list (glx-memory-get-32 (glx-memory-get-16 arg-ptr)) 2))
+        ((= mode 7) (list (glx-memory-get-32 (glx-memory-get-32 arg-ptr)) 4))
+        ((= mode 8) (list (glx-value-pop) 0))
+        ((= mode 9) (list (glx-get-local-at-offset (glx-memory-get-byte arg-ptr)) 1))
+        ((= mode 10) (list (glx-get-local-at-offset (glx-memory-get-16 arg-ptr)) 2))
+        ((= mode 11) (list (glx-get-local-at-offset (glx-memory-get-32 arg-ptr)) 4))
+        ((= mode 13) (list (glx-memory-get-32 (glx-+ *glx-ram-start* (glx-memory-get-byte arg-ptr))) 1))
+        ((= mode 14) (list (glx-memory-get-32 (glx-+ *glx-ram-start* (glx-memory-get-16 arg-ptr))) 2))
+        ((= mode 15) (list (glx-memory-get-32 (glx-+ *glx-ram-start* (glx-memory-get-32 arg-ptr))) 4))
         (t (signal 'glx-exec-error (list "Unsupported addressing mode" mode)))))
 
-(defun glx-check-for-no-return (value)
-  (if (eq value 'glk-no-return) glx-0 value))
-
-(defun glx-store-throw (&rest ignore) nil)
-(defun glx-store-mem (addr value &optional bytes) (if (not (glx-0-p addr)) (glx-memory-set addr (glx-check-for-no-return value) (if (not bytes) 4 bytes))) value)
-(defun glx-store-stack (ignore value &rest ignore-rest) (glx-value-push (glx-check-for-no-return value)) value)
-(defun glx-store-local (offset value &rest ignore) (glx-store-local-at-offset offset (glx-check-for-no-return value)) value)
-
 (defun glx-decode-store-arg (mode arg-ptr)
-  (cond ((= mode 0) (values (list #'glx-store-throw nil) 0))
-        ((= mode 5) (values (list #'glx-store-mem (glx-memory-get-byte arg-ptr)) 1))
-        ((= mode 6) (values (list #'glx-store-mem (glx-memory-get-16 arg-ptr)) 2))
-        ((= mode 7) (values (list #'glx-store-mem (glx-memory-get-32 arg-ptr)) 4))
-        ((= mode 8) (values (list #'glx-store-stack nil) 0))
-        ((= mode 9) (values (list #'glx-store-local (glx-memory-get-byte arg-ptr)) 1))
-        ((= mode 10) (values (list #'glx-store-local (glx-memory-get-16 arg-ptr)) 2))
-        ((= mode 11) (values (list #'glx-store-local (glx-memory-get-32 arg-ptr)) 4))
-        ((= mode 13) (values (list #'glx-store-mem (glx-+ *glx-ram-start* (glx-memory-get-byte arg-ptr))) 1))
-        ((= mode 14) (values (list #'glx-store-mem (glx-+ *glx-ram-start* (glx-memory-get-16 arg-ptr))) 2))
-        ((= mode 15) (values (list #'glx-store-mem (glx-+ *glx-ram-start* (glx-memory-get-32 arg-ptr))) 4))
+  (cond ((= mode 0) (list (list #'glx-store-throw nil) 0))
+        ((= mode 5) (list (list #'glx-store-mem (glx-memory-get-byte arg-ptr)) 1))
+        ((= mode 6) (list (list #'glx-store-mem (glx-memory-get-16 arg-ptr)) 2))
+        ((= mode 7) (list (list #'glx-store-mem (glx-memory-get-32 arg-ptr)) 4))
+        ((= mode 8) (list (list #'glx-store-stack nil) 0))
+        ((= mode 9) (list (list #'glx-store-local (glx-memory-get-byte arg-ptr)) 1))
+        ((= mode 10) (list (list #'glx-store-local (glx-memory-get-16 arg-ptr)) 2))
+        ((= mode 11) (list (list #'glx-store-local (glx-memory-get-32 arg-ptr)) 4))
+        ((= mode 13) (list (list #'glx-store-mem (glx-+ *glx-ram-start* (glx-memory-get-byte arg-ptr))) 1))
+        ((= mode 14) (list (list #'glx-store-mem (glx-+ *glx-ram-start* (glx-memory-get-16 arg-ptr))) 2))
+        ((= mode 15) (list (list #'glx-store-mem (glx-+ *glx-ram-start* (glx-memory-get-32 arg-ptr))) 4))
         (t (signal 'glx-exec-error (list "Unsupported addressing mode" mode)))))
 
 (defun glx-process-args (arg-spec addressing-modes-ptr load-arg-processor store-arg-processor)
@@ -88,12 +80,12 @@ This function mostly deals with advancing the pointer and loading the modes, the
 loaded by the supplied LOAD-ARG-PROCESSOR and STORE-ARG-PROCESSOR functions."
   (let ((number-of-args (length arg-spec)))
     (let ((low-bits t)
-          (arg-ptr (glx-+ addressing-modes-ptr (glx-32 (/ (if (oddp number-of-args) (+ 1 number-of-args) number-of-args) 2))))
+          (arg-ptr (glx-+ addressing-modes-ptr (glx-32 (/ (if (cl-oddp number-of-args) (+ 1 number-of-args) number-of-args) 2))))
           args
           modes)
-      (dolist (spec arg-spec (values arg-ptr (nreverse args) (nreverse modes)))
+      (dolist (spec arg-spec (list arg-ptr (nreverse args) (nreverse modes)))
         (let ((mode (glx-get-mode addressing-modes-ptr low-bits)))
-          (multiple-value-bind (arg bytes-used)
+          (cl-multiple-value-bind (arg bytes-used)
               (if (eq spec 'load)
                   (funcall load-arg-processor mode arg-ptr)
                 (funcall store-arg-processor mode arg-ptr))
@@ -128,7 +120,7 @@ Also returns the addressing modes themselves. "
 (defun glx-format-exec-log (opcode args)
   (apply #'concat
          (format "%15s " opcode)
-         (mapcar (lambda (arg) (format "%8s " (if (symbolp (car arg))
+         (mapcar (lambda (arg) (format "%8s " (if (and (listp arg) (symbolp (car arg)))
                                                   (format "%8x-%8s"
                                                           (cond ((eql (car arg) #'glx-store-throw) 0)
                                                                 ((eql (car arg) #'glx-store-mem) 1)
@@ -147,9 +139,9 @@ Also returns the addressing modes themselves. "
     "0"))
 
 (defun glx-execute-uncompiled-instruction ()
-  (multiple-value-bind (addressing-modes-ptr opcode) (glx-get-opcode *glx-pc*)
+  (cl-multiple-value-bind (addressing-modes-ptr opcode) (glx-get-opcode *glx-pc*)
     (glx-log "Could not compile instruction at %08x" (glx-32->int *glx-pc*))
-    (multiple-value-bind (next-instruction args modes)
+    (cl-multiple-value-bind (next-instruction args modes)
         (glx-get-opcode-args opcode addressing-modes-ptr)
       (setq *glx-pc* next-instruction)
       (glx-execute-instruction opcode args modes))))
@@ -158,15 +150,15 @@ Also returns the addressing modes themselves. "
   (if *glx-compile*
       (progn
         (if (not (gethash *glx-pc* *glx-compiled-instructions*))
-            (multiple-value-bind (next-instruction compiled-instruction) (glx-compile-instruction *glx-pc*)
+            (cl-multiple-value-bind (next-instruction compiled-instruction) (glx-compile-instruction *glx-pc*)
               (glx-log "Compiled instruction at %08x %s" (glx-32->int  *glx-pc*) compiled-instruction)
               (when compiled-instruction (puthash *glx-pc* (list compiled-instruction next-instruction) *glx-compiled-instructions*))))
         (let ((compiled-instruction (gethash *glx-pc* *glx-compiled-instructions*)))
           (if compiled-instruction
               (progn
                 (glx-log "Executing compiled instruction at %08x %s" (glx-32->int *glx-pc*) compiled-instruction)
-                (setq *glx-pc* (second compiled-instruction))
-                (glx-process-instruction-result (glx-execute-compiled-instruction (first compiled-instruction))))
+                (setq *glx-pc* (cadr compiled-instruction))
+                (glx-process-instruction-result (glx-execute-compiled-instruction (car compiled-instruction))))
             (glx-execute-uncompiled-instruction))))
     (glx-execute-uncompiled-instruction)))
 
@@ -202,44 +194,44 @@ during compilation, and compiles those also."
   "The first result is a list of a function to run to retrieve the actual value for the argument,
 and a value to pass as an argument to that function when running it. The second result is the 
 number of bytes used from the instructions argument data."
-  (cond ((= mode 0) (values (list (lambda (loaded-arg-ptr) glx-0) nil) 0))
-        ((= mode 1) (values (list #'identity (glx-memory-get-byte-signed arg-ptr)) 1))
-        ((= mode 2) (values (list #'identity (glx-memory-get-16-signed arg-ptr)) 2))
-        ((= mode 3) (values (list #'identity (glx-memory-get-32 arg-ptr)) 4))
-        ((= mode 5) (values (list (lambda (loaded-arg-ptr) (glx-memory-get-32 loaded-arg-ptr)) (glx-memory-get-byte arg-ptr)) 1))
-        ((= mode 6) (values (list (lambda (loaded-arg-ptr) (glx-memory-get-32 loaded-arg-ptr)) (glx-memory-get-16 arg-ptr)) 2))
-        ((= mode 7) (values (list (lambda (loaded-arg-ptr) (glx-memory-get-32 loaded-arg-ptr)) (glx-memory-get-32 arg-ptr)) 4))
-        ((= mode 8) (values (list (lambda (loaded-arg-ptr) (glx-value-pop)) nil) 0))
-        ((= mode 9) (values (list (lambda (loaded-arg-ptr) (glx-get-local-at-offset loaded-arg-ptr)) (glx-memory-get-byte arg-ptr)) 1))
-        ((= mode 10) (values (list (lambda (loaded-arg-ptr) (glx-get-local-at-offset loaded-arg-ptr)) (glx-memory-get-16 arg-ptr)) 2))
-        ((= mode 11) (values (list (lambda (loaded-arg-ptr) (glx-get-local-at-offset loaded-arg-ptr)) (glx-memory-get-32 arg-ptr)) 4))
-        ((= mode 13) (values (list (lambda (loaded-arg-ptr) (glx-memory-get-32 loaded-arg-ptr)) (glx-+ *glx-ram-start* (glx-memory-get-byte arg-ptr))) 1))
-        ((= mode 14) (values (list (lambda (loaded-arg-ptr) (glx-memory-get-32 loaded-arg-ptr)) (glx-+ *glx-ram-start* (glx-memory-get-16 arg-ptr))) 2))
-        ((= mode 15) (values (list (lambda (loaded-arg-ptr) (glx-memory-get-32 loaded-arg-ptr)) (glx-+ *glx-ram-start* (glx-memory-get-32 arg-ptr))) 4))
+  (cond ((= mode 0) (list (list (lambda (loaded-arg-ptr) glx-0) nil) 0))
+        ((= mode 1) (list (list #'identity (glx-memory-get-byte-signed arg-ptr)) 1))
+        ((= mode 2) (list (list #'identity (glx-memory-get-16-signed arg-ptr)) 2))
+        ((= mode 3) (list (list #'identity (glx-memory-get-32 arg-ptr)) 4))
+        ((= mode 5) (list (list (lambda (loaded-arg-ptr) (glx-memory-get-32 loaded-arg-ptr)) (glx-memory-get-byte arg-ptr)) 1))
+        ((= mode 6) (list (list (lambda (loaded-arg-ptr) (glx-memory-get-32 loaded-arg-ptr)) (glx-memory-get-16 arg-ptr)) 2))
+        ((= mode 7) (list (list (lambda (loaded-arg-ptr) (glx-memory-get-32 loaded-arg-ptr)) (glx-memory-get-32 arg-ptr)) 4))
+        ((= mode 8) (list (list (lambda (loaded-arg-ptr) (glx-value-pop)) nil) 0))
+        ((= mode 9) (list (list (lambda (loaded-arg-ptr) (glx-get-local-at-offset loaded-arg-ptr)) (glx-memory-get-byte arg-ptr)) 1))
+        ((= mode 10) (list (list (lambda (loaded-arg-ptr) (glx-get-local-at-offset loaded-arg-ptr)) (glx-memory-get-16 arg-ptr)) 2))
+        ((= mode 11) (list (list (lambda (loaded-arg-ptr) (glx-get-local-at-offset loaded-arg-ptr)) (glx-memory-get-32 arg-ptr)) 4))
+        ((= mode 13) (list (list (lambda (loaded-arg-ptr) (glx-memory-get-32 loaded-arg-ptr)) (glx-+ *glx-ram-start* (glx-memory-get-byte arg-ptr))) 1))
+        ((= mode 14) (list (list (lambda (loaded-arg-ptr) (glx-memory-get-32 loaded-arg-ptr)) (glx-+ *glx-ram-start* (glx-memory-get-16 arg-ptr))) 2))
+        ((= mode 15) (list (list (lambda (loaded-arg-ptr) (glx-memory-get-32 loaded-arg-ptr)) (glx-+ *glx-ram-start* (glx-memory-get-32 arg-ptr))) 4))
         (t (signal 'glx-exec-error (list "Unsupported addressing mode" mode)))))
 
 (defun glx-compile-store-arg (mode arg-ptr)
-  (multiple-value-bind (store bytes-read)
+  (cl-multiple-value-bind (store bytes-read)
       (glx-decode-store-arg mode arg-ptr)
-    (values (list #'identity store) bytes-read)))
+    (list (list #'identity store) bytes-read)))
 
 (defun glx-compile-args (arg-spec addressing-modes-ptr)
   (glx-process-args arg-spec addressing-modes-ptr #'glx-compile-load-arg #'glx-compile-store-arg))
 
 (defun glx-compile-instruction (ptr)
-  (multiple-value-bind (addressing-modes-ptr opcode)
+  (cl-multiple-value-bind (addressing-modes-ptr opcode)
       (glx-get-opcode ptr)
     (let ((instruction (gethash opcode glx-instructions)))
       (if instruction
-          (multiple-value-bind (next-instruction compiled-args modes)
+          (cl-multiple-value-bind (next-instruction compiled-args modes)
               (glx-compile-args (glx-instruction-arg-list instruction) addressing-modes-ptr)
-            (values next-instruction (list (glx-instruction-function instruction) modes compiled-args)))
+            (list next-instruction (list (glx-instruction-function instruction) modes compiled-args)))
         (signal 'glx-exec-error (list "Unknown opcode" opcode))))))
 
 (defun glx-execute-compiled-instruction (compiled-inst)
-  (apply (first compiled-inst) ; The instruction function
-         (second compiled-inst) ; The addressing modes used to load the args
-         (mapcar #'(lambda (compiled-arg) (funcall (first compiled-arg) (second compiled-arg)))
-                 (third compiled-inst)))) ; Call the functions to get the values for the instruction's arguments.
+  (apply (car compiled-inst) ; The instruction function
+         (cadr compiled-inst) ; The addressing modes used to load the args
+         (mapcar #'(lambda (compiled-arg) (funcall (car compiled-arg) (cadr compiled-arg)))
+                 (nth 2 compiled-inst)))) ; Call the functions to get the values for the instruction's arguments.
 
 (provide 'glx-exec)

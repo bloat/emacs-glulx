@@ -9,43 +9,43 @@
 ;; This file is licensed under the terms of the GNU General Public
 ;; License as distributed with Emacs (press C-h C-c to view it).
 
-(macrolet ((with-test-functions (&body body)
-                                `(cl-labels ((create-two-windows-proportional (new-position size-percentage)
-                                                                              (glk-window-open (glk-window-open nil nil 0 'glk-wintype-text-buffer 0 'window1 nil 'stream1 'stream2)
-                                                                                               (list new-position 'glk-winmethod-proportional)
-                                                                                               size-percentage 'glk-wintype-text-buffer 0 'window2 'pair 'stream3 'stream4))
-                                             (create-two-windows-fixed (new-position size &optional type)
-                                                                       (when (null type) (setq type 'glk-wintype-text-buffer))
-                                                                       (glk-window-open (glk-window-open nil nil 0 'glk-wintype-text-buffer 0 'window1 nil nil nil)
-                                                                                        (list new-position 'glk-winmethod-fixed) size type 0 'window2 'pair nil nil))
-                                             (first-window () (glki-get-emacs-window 'window1))
-                                             (second-window () (glki-get-emacs-window 'window2))
-                                             (bottom-window-p (window) (coordinates-in-window-p (cons 0 (- (frame-height glk-frame) 2)) window))
-                                             (top-window-p (window) (coordinates-in-window-p (cons 0 1) window))
-                                             (right-window-p (window) (coordinates-in-window-p (cons (- (frame-width glk-frame) 1) 1) window))
-                                             (left-window-p (window) (coordinates-in-window-p (cons 0 1) window))
-                                             (number-of-windows-on-glk-frame () (length (window-list glk-frame 'no-minibuffer (first-window))))
-                                             (get-point-in-window (windowid) (with-current-buffer (glki-opq-window-get-buffer windowid) (list (line-number-at-pos) (current-column)))))
-                                   ,@body))
-           
-
-           (with-glk-start-and-end (&body body)
-                                   
-                                   `(with-test-functions
-                                     
-                                     (unwind-protect
-                                         (progn (glki-init (make-frame (list (cons 'height 61) (cons 'width 60))))
-                                                ,@body)
-                                       (glki-end)
-                                       (should-not glki-opq-window)
-                                       (should-not glki-opq-stream)
-                                       (should-not (remove-if #'(lambda (b) (not (string-match "\\*glk\\*" (buffer-name b)))) (buffer-list))))))
-           
-           (with-two-windows (second-window-position &body body)
-                             `(with-glk-start-and-end
-                               (create-two-windows-proportional ,second-window-position 50)
-                               ,@body)))
-
+(cl-macrolet ((with-test-functions (&body body)
+                                   `(cl-labels ((create-two-windows-proportional (new-position size-percentage)
+                                                                                 (glk-window-open (glk-window-open nil nil 0 'glk-wintype-text-buffer 0 'window1 nil 'stream1 'stream2)
+                                                                                                  (list new-position 'glk-winmethod-proportional)
+                                                                                                  size-percentage 'glk-wintype-text-buffer 0 'window2 'pair 'stream3 'stream4))
+                                                (create-two-windows-fixed (new-position size &optional type)
+                                                                          (when (null type) (setq type 'glk-wintype-text-buffer))
+                                                                          (glk-window-open (glk-window-open nil nil 0 'glk-wintype-text-buffer 0 'window1 nil nil nil)
+                                                                                           (list new-position 'glk-winmethod-fixed) size type 0 'window2 'pair nil nil))
+                                                (first-window () (glki-get-emacs-window 'window1))
+                                                (second-window () (glki-get-emacs-window 'window2))
+                                                (bottom-window-p (window) (coordinates-in-window-p (cons 0 (- (frame-height glk-frame) 2)) window))
+                                                (top-window-p (window) (coordinates-in-window-p (cons 0 1) window))
+                                                (right-window-p (window) (coordinates-in-window-p (cons (- (frame-width glk-frame) 1) 1) window))
+                                                (left-window-p (window) (coordinates-in-window-p (cons 0 1) window))
+                                                (number-of-windows-on-glk-frame () (length (window-list glk-frame 'no-minibuffer (first-window))))
+                                                (get-point-in-window (windowid) (with-current-buffer (glki-opq-window-get-buffer windowid) (list (line-number-at-pos) (current-column)))))
+                                      ,@body))
+              
+              
+              (with-glk-start-and-end (&body body)
+                                      
+                                      `(with-test-functions
+                                        
+                                        (unwind-protect
+                                            (progn (glki-init (make-frame (list (cons 'height 61) (cons 'width 60))))
+                                                   ,@body)
+                                          (glki-end)
+                                          (should-not glki-opq-window)
+                                          (should-not glki-opq-stream)
+                                          (should-not (cl-remove-if #'(lambda (b) (not (string-match "\\*glk\\*" (buffer-name b)))) (buffer-list))))))
+              
+              (with-two-windows (second-window-position &body body)
+                                `(with-glk-start-and-end
+                                  (create-two-windows-proportional ,second-window-position 50)
+                                  ,@body)))
+  
   (ert-deftest should-be-able-to-open-the-first-glk-window ()
     "Should be able to open the first glk window"
     :tags '(glk window)
@@ -255,7 +255,7 @@
     :tags '(glk window)
     (with-glk-start-and-end
      (create-two-windows-fixed 'glk-winmethod-above 5 'glk-wintype-text-grid)
-     (should (= (caddr (glk-window-get-size 'window2)) 5))))
+     (should (= (cl-caddr (glk-window-get-size 'window2)) 5))))
 
   (ert-deftest should-be-able-to-change-cursor-position-in-a-text-grid-window ()
     "Should be able to change cursor position in a text grid window"

@@ -9,16 +9,16 @@
 ;; This file is licensed under the terms of the GNU General Public
 ;; License as distributed with Emacs (press C-h C-c to view it).
 
-(macrolet ((with-glk-window (&body body)
-                            `(unwind-protect
-                                 (progn
-                                   (glki-generate-new-window 'glk-wintype-text-buffer 'window 'stream 42)
-                                   (setq glk-root-window 'window)
-                                   ,@body)
-                               (kill-buffer "*glk*")
-                               (glki-dispose-window 'window)
-                               (setq glk-root-window nil))))
-
+(cl-macrolet ((with-glk-window (&body body)
+                               `(unwind-protect
+                                    (progn
+                                      (glki-generate-new-window 'glk-wintype-text-buffer 'window 'stream 42)
+                                      (setq glk-root-window 'window)
+                                      ,@body)
+                                  (kill-buffer "*glk*")
+                                  (glki-dispose-window 'window)
+                                  (setq glk-root-window nil))))
+  
   (ert-deftest glki-mode-add-input-to-event-queue-should-do-nothing-if-no-event-is-requested ()
     "glki-mode-add-input-to-event-queue should do nothing if no event is requested"
     :tags '(glk mode)
@@ -76,7 +76,7 @@
     :tags '(glk mode)
     (with-glk-window
      (glk-request-char-event 'window)
-     (setq last-command-char 100)
+     (setq last-command-event 100)
      (save-current-buffer
        (set-buffer (glki-opq-window-get-buffer 'window))
        (glki-press-any-key)

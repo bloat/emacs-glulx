@@ -181,8 +181,8 @@
                      (list #'glx-get-next-glk-id)) *glx-glk-functions*)
 
 (defun glx-get-next-glk-id ()
-  (incf *glx-glk-id-gen*)
-  (intern (prin1-to-string (glx-32 *glx-glk-id-gen*))))
+  (cl-incf *glx-glk-id-gen*)
+  (intern (prin1-to-string (glx-32-get-bytes-as-list-big-endian (glx-32 *glx-glk-id-gen*)))))
 
 (defun glx-glk-args-from-stack (arg-count)
   (let ((args (make-vector arg-count nil)))
@@ -223,7 +223,7 @@ entire glk call."
   (dolist (store stores)
     (let ((store-function-args (car store))
           (positions (cadr store))
-          (store-function (caddr store)))
+          (store-function (cl-caddr store)))
 
       (dolist (p positions)
         (push (nth p results) store-function-args))
@@ -236,7 +236,7 @@ entire glk call."
     glk-call-result))
 
 (defun glx-32->glk-opq (value)
-  (if (glx-0-p value) nil (intern (prin1-to-string value))))
+  (if (glx-0-p value) nil (intern (prin1-to-string (glx-32-get-bytes-as-list-big-endian value)))))
 
 (defconst glk-winmethod-position-decode
   '((3 glk-winmethod-below) (2 glk-winmethod-above) (1 glk-winmethod-right) (0 glk-winmethod-left)))
@@ -252,37 +252,37 @@ entire glk call."
   (glki-winmethod (glx-32->int value)))
 
 (defun glx-32->glk-wintype (value)
-  (case (glx-32->int value)
-    (0 'glk-wintype-all-types)
-    (1 'glk-wintype-pair)
-    (2 'glk-wintype-blank)
-    (3 'glk-wintype-text-buffer)
-    (4 'glk-wintype-text-grid)
-    (5 'glk-wintype-graphics)))
+  (cond
+   ((= value 0) 'glk-wintype-all-types)
+   ((= value 1) 'glk-wintype-pair)
+   ((= value 2) 'glk-wintype-blank)
+   ((= value 3) 'glk-wintype-text-buffer)
+   ((= value 4) 'glk-wintype-text-grid)
+   ((= value 5) 'glk-wintype-graphics)))
 
 (defun glx-32->glk-style (value)
-  (case (glx-32->int value)
-    (1 'glk-emphasizes-face)
-    (3 'glk-header-face)
-    (4 'glk-subheader-face)
-    (t 'glk-normal-face)))
+  (cond
+   ((= value 1) 'glk-emphasizes-face)
+   ((= value 3) 'glk-header-face)
+   ((= value 4) 'glk-subheader-face)
+   ('glk-normal-face)))
 
 (defun glx-32->glk-filemode (value)
-  (case (glx-32->int value)
-    (1 'glk-filemode-write)
-    (2 'glk-filemode-read)
-    (3 'glk-filemode-readwrite)
-    (5 'glk-filemode-writeappend)))
+  (cond
+   ((= value 1) 'glk-filemode-write)
+   ((= value 2) 'glk-filemode-read)
+   ((= value 3) 'glk-filemode-readwrite)
+   ((= value 5) 'glk-filemode-writeappend)))
 
 (defun glx-32->glk-gestalt-selector (value)
-  (case (glx-32->int value)
-    (0 'glk-gestalt-version)
-    (15 'glk-gestalt-unicode)))
+  (cond
+   ((= value 0) 'glk-gestalt-version)
+   ((= value 15) 'glk-gestalt-unicode)))
 
 (defun glx-glk-opq->glx-32 (value)
   (if (null value)
       glx-0
-    (read (symbol-name value))))
+    (apply #'glx-32 (nreverse (read (symbol-name value))))))
 
 (defun glx-glk-result->32 (result)
   (cond ((null result) glx-0)
@@ -345,12 +345,12 @@ If the memory address is 0 then all results are discarded."
 (defun glx-glk-store-event (event memptr)
   (glx-log "storing event to location: %S - %S" memptr event)
   (glx-store-glk-structure memptr
-                           (list (glx-32 (glx-glk-event-type->int (first event)))
-                                 (glx-glk-opq->glx-32 (second event))
-                                 (glx-32 (third event))
-                                 (glx-32 (fourth event))))
-  (when (eq (first event) 'glk-evtype-lineinput)
-    (glx-memory-set-string (fifth event) (sixth event))))
+                           (list (glx-32 (glx-glk-event-type->int (car event)))
+                                 (glx-glk-opq->glx-32 (cadr event))
+                                 (glx-32 (nth 2 event))
+                                 (glx-32 (nth 3 event))))
+  (when (eq (car event) 'glk-evtype-lineinput)
+    (glx-memory-set-string (nth 4 event) (nth 5 event))))
 
 (defun glx-memory-set-unicode-string (memptr string)
   (mapcar (lambda (c) (glx-memory-set memptr (glx-32 c) 4) (setq memptr (glx-+ glx-4 memptr))) string))
@@ -358,14 +358,14 @@ If the memory address is 0 then all results are discarded."
 (defun glx-glk-store-closed-stream (stream memptr)
   "Ignores STREAM unless it is a memory stream. Otherwise stores 
 the read count and the write count and the data from STREAM."
-  (when (first stream) 
+  (when (car stream) 
     (glx-log "storing stream to location: %S - %S" memptr stream)
     (glx-store-glk-structure memptr
-                             (list (glx-32 (second stream))
-                                   (glx-32 (third stream))))
-    (if (fourth stream)
-        (glx-memory-set-unicode-string (fifth stream) (sixth stream))
-      (glx-memory-set-string (fifth stream) (sixth stream)))))
+                             (list (glx-32 (cadr stream))
+                                   (glx-32 (nth 2 stream))))
+    (if (nth 3 stream)
+        (glx-memory-set-unicode-string (nth 4 stream) (nth 5 stream))
+      (glx-memory-set-string (nth 4 stream) (nth 5 stream)))))
 
 (defun glx-glk-load-string-buffer (memptr buflen)
   (let (chars)

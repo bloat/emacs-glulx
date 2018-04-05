@@ -296,7 +296,7 @@
     (should (equal (glx-stack-peek 3) (list glx-0 glx-1 glx-2)))
     (should (equal (glx-stack-peek 2) (list glx-0 glx-1))))
 
-  (let ((*glx*-stack* ()))
+  (let ((*glx-stack* ()))
     (glx-push-new-call-frame ())
     (glx-value-push glx-4)
     (glx-value-push glx-3)

@@ -101,8 +101,7 @@ string table at *GLX-STRING-TABLE*. Characters from the uncompressed
 string are passed to the current GLX-IOSYS-CHARFUN. If there are any
 glulx functions to call while uncompressing, they are handled with the 
 FUNCTION-CALLER."
-  (let ((result "")
-        (node (glx-st-get-root-node-ptr)))
+  (let ((node (glx-st-get-root-node-ptr)))
     (let ((node-type (glx-memory-get-byte-int node)))
       (while (not (= node-type 1))
         (cond ((= 0 node-type) (setq node (glx-memory-get-32 (glx-+ (if (glx-next-bit bitstream) glx-5 glx-1) node))))

@@ -9,18 +9,18 @@
 ;; This file is licensed under the terms of the GNU General Public
 ;; License as distributed with Emacs (press C-h C-c to view it).
 
-(macrolet ((clean-up-and-check (&body body)
-                               `(unwind-protect
-                                    (progn ,@body)
-                                  (glki-dispose-window 'window)
-                                  (glki-stream-dispose 'a-stream)
-                                  (glk-fileref-destroy 'existing)
-                                  (glk-fileref-destroy 'non-existing)
-                                  (should-not glki-opq-window)
-                                  (should-not glki-opq-stream)
-                                  (should-not glki-opq-fileref)
-                                  (should-not (remove-if #'(lambda (b) (not (string-match "\\*glk\\*" (buffer-name b)))) (buffer-list))))))
-
+(cl-macrolet ((clean-up-and-check (&body body)
+                                  `(unwind-protect
+                                       (progn ,@body)
+                                     (glki-dispose-window 'window)
+                                     (glki-stream-dispose 'a-stream)
+                                     (glk-fileref-destroy 'existing)
+                                     (glk-fileref-destroy 'non-existing)
+                                     (should-not glki-opq-window)
+                                     (should-not glki-opq-stream)
+                                     (should-not glki-opq-fileref)
+                                     (should-not (cl-remove-if #'(lambda (b) (not (string-match "\\*glk\\*" (buffer-name b)))) (buffer-list))))))
+  
   (ert-deftest glki-create-window-stream-should-create-a-window-stream ()
     "glki-create-window-stream should create a window stream"
     :tags '(glk stream)
@@ -55,8 +55,7 @@
      (glki-generate-new-window 'glk-wintype-text-buffer 'window 'a-stream 0)
      (glk-set-window 'window)
      (glk-put-string "You are in a room")
-     (save-current-buffer
-       (set-buffer "*glk*")
+     (with-current-buffer "*glk*"
        (should (equal (buffer-string) "You are in a room"))
        (should (get-text-property 0 'glk-text (buffer-string)))
        (should (get-text-property 1 'glk-text (buffer-string))))))
@@ -68,8 +67,7 @@
      (glki-generate-new-window 'glk-wintype-text-buffer 'window 'a-stream 0)
      (glk-set-window 'window)
      (glk-put-char ?Y)
-     (save-current-buffer
-       (set-buffer "*glk*")
+     (with-current-buffer "*glk*"
        (should (equal (buffer-string) "Y")))))
 
   (ert-deftest glk-put-char-stream-should-write-to-the-given-stream ()
@@ -78,8 +76,7 @@
     (clean-up-and-check
      (put 'a-stream 'buffer (generate-new-buffer "*glk*"))
      (glk-put-char-stream 'a-stream ?Y)
-     (save-current-buffer
-       (set-buffer "*glk*")
+     (with-current-buffer "*glk*"
        (should (equal (buffer-string) "Y")))))
 
   (ert-deftest glk-put-string-stream-should-write-to-the-given-stream ()
@@ -88,8 +85,7 @@
     (clean-up-and-check
      (put 'a-stream 'buffer (generate-new-buffer "*glk*"))
      (glk-put-string-stream 'a-stream "You are in a room")
-     (save-current-buffer
-       (set-buffer "*glk*")
+     (with-current-buffer "*glk*"
        (should (equal (buffer-string) "You are in a room")))))
 
   (ert-deftest glk-get-char-stream-should-read-from-the-given-stream ()
@@ -97,8 +93,7 @@
     :tags '(glk stream)
     (clean-up-and-check
      (put 'a-stream 'buffer (generate-new-buffer "*glk*"))
-     (save-current-buffer
-       (set-buffer "*glk*")
+     (with-current-buffer "*glk*"
        (insert "You are in a room")
        (goto-char (point-min)))
      (should (equal (glk-get-char-stream 'a-stream) ?Y))
@@ -109,8 +104,7 @@
     :tags '(glk stream)
     (clean-up-and-check
      (put 'a-stream 'buffer (generate-new-buffer "*glk*"))
-     (save-current-buffer
-       (set-buffer "*glk*")
+     (with-current-buffer "*glk*"
        (insert "You are in a room")
        (goto-char (point-min)))
      (should (equal (glk-get-buffer-stream 'a-stream 5) '("You a" 5)))
@@ -122,8 +116,7 @@
     (clean-up-and-check
      (glki-generate-new-window 'glk-wintype-text-buffer 'window 'a-stream 0)
      (glk-set-window 'window)
-     (save-excursion
-       (set-buffer "*glk*")
+     (with-current-buffer "*glk*"
        (setq fill-column 4)
        (glk-put-string "You are in a room")
        (should (equal (buffer-string) "You\nare\nin a\nroom")))))
@@ -141,8 +134,7 @@
     :tags '(glk stream)
     (clean-up-and-check
      (glk-stream-open-memory 'buffer 20 'write 'rock 'a-stream)
-     (save-excursion
-       (set-buffer "*glk*")
+     (with-current-buffer "*glk*"
        (setq fill-column 4)
        (glk-put-string-stream 'a-stream "You are in a room")
        (should (equal (buffer-string) "You are in a room"))

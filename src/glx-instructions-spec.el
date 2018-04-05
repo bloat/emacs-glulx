@@ -712,7 +712,7 @@
         (should (equal *glx-catch-token* glx-2))
         (should (equal *glx-pc* (glx-32 6))) ; pc + offset - 2
         ;; The top element of the call frame's stack. Can't see it by regular popping.
-        (should (equal (caaar *glx-stack*) `(catch ,glx-1)))))
+        (should (equal (cl-caaar *glx-stack*) `(catch ,glx-1)))))
 
     ;; Store token onto stack
     (with-glx-stack () (3 0 3 0 17)
@@ -721,7 +721,7 @@
         
         (glx-instruction-catch nil (list #'glx-store-stack nil) glx-5)
         ;; The second element of the call frame's stack. Can't see it by regular popping.
-        (should (equal (cadaar *glx-stack*) `(catch ,(glx-32 17))))))))
+        (should (equal (cl-cadaar *glx-stack*) `(catch ,(glx-32 17))))))))
 
 (ert-deftest throw-instruction ()
   "throw instruction"
@@ -752,13 +752,16 @@
   "restore game should load from buffer"
   :tags '(instructions)
   (unwind-protect
-      (let ((*glx-memory* (make-vector 8 0)))
+      (let ((*glx-memory* (make-vector 8 0))
+            (stream (glx-32->glk-opq 12))
+            (*glx-pc* 88))
         (with-temp-buffer
-          (insert "([0 1 2 3 0 0 0 0] ((1 (0 0 0 4) (7 8 9 10)) (nil (((0 0 0 0) 0 0 0 0)))))")
-          (put 'stream 'buffer (current-buffer))
-          (glx-restore-game 'stream)
+          (insert "([0 1 2 3 0 0 0 0] ((1 4 52) (nil ((0 . 0)))))")
+          (put stream 'buffer (current-buffer))
+          (glx-restore-game (glx-32 12))
           (should (equal *glx-memory* [0 1 2 3 255 255 255 255]))
-          (should (equal *glx-stack* (list (list nil (list (cons glx-0 glx-0))))))))
+          (should (equal *glx-stack* (list (list nil (list (cons glx-0 glx-0))))))
+          (should (= *glx-pc* 52))))
     (put 'fileref 'buffer nil)))
 
 (ert-deftest restore-game-should-load-from-buffer-and-not-overwrite-protected-memory ()
@@ -766,11 +769,14 @@
   :tags '(instructions)
   (unwind-protect
       (let ((*glx-protect* (cons 1 2))
-            (*glx-memory* (vector 4 5 6 7 0 0 0 0)))
+            (*glx-memory* (vector 4 5 6 7 0 0 0 0))
+            (stream (glx-32->glk-opq 12))
+            (*glx-pc* 88))
         (with-temp-buffer
-          (insert "([0 1 2 3 0 0 0 0] ((1 (0 0 0 4) (7 8 9 10)) (nil (((0 0 0 0) 0 0 0 0)))))")
-          (put 'stream 'buffer (current-buffer))
-          (glx-restore-game 'stream)
+          (insert "([0 1 2 3 0 0 0 0] ((1 4 53) (nil ((0 . 0)))))")
+          (put stream 'buffer (current-buffer))
+          (glx-restore-game (glx-32 12))
           (should (equal *glx-memory* [0 5 6 3 255 255 255 255]))
-          (should (equal *glx-stack* (list (list nil (list (cons glx-0 glx-0))))))))
+          (should (equal *glx-stack* (list (list nil (list (cons glx-0 glx-0))))))
+          (should (= *glx-pc* 53))))
     (put 'fileref 'buffer nil)))

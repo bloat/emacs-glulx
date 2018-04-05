@@ -9,6 +9,8 @@
 ;; This file is licensed under the terms of the GNU General Public
 ;; License as distributed with Emacs (press C-h C-c to view it).
 
+(require 'glx-accelerated)
+
 (ert-deftest z-region-header-false ()
   "Returns false if the arg points to the header"
   :tags '(accelerated)

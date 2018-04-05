@@ -9,6 +9,8 @@
 ;; This file is licensed under the terms of the GNU General Public
 ;; License as distributed with Emacs (press C-h C-c to view it).
 
+(require 'glk-encoding)
+
 (ert-deftest should-be-able-to-convert-to-lower-case ()
   "Should be able to convert to lower case"
   :tags '(glk encoding)

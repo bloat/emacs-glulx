@@ -49,9 +49,10 @@ location given by the 32 bit MEMPTR."
       value)))
 
 (defun glx-sign-extend-16-to-32 (value)
-  (let ((unsigned (glx-32->int value)))
+  (let ((unsigned (glx-32->int value))
+        (bytes (glx-32-get-bytes-as-list-big-endian value)))
     (if (> unsigned #x7fff)
-        (glx-32 (fourth value) (third value) 255 255)
+        (glx-32 (nth 3 bytes) (nth 2 bytes) 255 255)
       value)))
 
 (defun glx-memory-get-byte-signed (memptr)
@@ -62,7 +63,7 @@ location given by the 32 bit MEMPTR. The value is sign extended from 8 to 32 bit
 (defun glx-memory-get-range-as-vector (start end)
   "Return a vector of bytes from the Glulx VM memory locations given by
 START (inclusive) and END (exclusive)."
-  (subseq *glx-memory* (glx-32->int start) (glx-32->int end)))
+  (cl-subseq *glx-memory* (glx-32->int start) (glx-32->int end)))
 
 (defun glx-memory-get-range (start end)
   "Return a list of bytes from the Glulx VM memory locations given by
@@ -95,27 +96,27 @@ location given by the 32 bit MEMPTR."
   "Sets a value into the memory location given by the 32 bit MEMPTR.
 The value is truncated to the given number of bytes."
   (let ((ptr (glx-32->int memptr)))
-    (dolist (byte (subseq (glx-32-get-bytes-as-list-big-endian value) (- bytes)))
+    (dolist (byte (cl-subseq (glx-32-get-bytes-as-list-big-endian value) (- bytes)))
       (aset *glx-memory* ptr byte)
-      (incf ptr))))
+      (cl-incf ptr))))
 
 (defun glx-memory-set-string (memptr string)
   (let ((ptr (glx-32->int memptr)))
     (mapcar (lambda (char) (aset *glx-memory* ptr char)
-              (incf ptr))
+              (cl-incf ptr))
             string)))
 
-(defun glx-log (message &rest values)
-  ;; (unless *glx-log-buffer*
-  ;;   (setq *glx-log-buffer* (get-buffer-create "*glx-log*")))
-  ;; (save-excursion
-  ;;   (set-buffer *glx-log-buffer*)
-  ;;   (insert (apply #'format message values) ?\n))
-  )
+;; (defun glx-log (message &rest values)
+;;   (unless *glx-log-buffer*
+;;     (setq *glx-log-buffer* (get-buffer-create "*glx-log*")))
+;;   (with-current-buffer *glx-log-buffer*
+;;     (insert (apply #'format message values) ?\n)))
+
+(defsubst glx-log (message &rest values))
 
 (defun glx-search-get-key (key key-size options)
   (if (= 0 (logand 1 (glx-32->int options)))
-      (subseq (glx-32-get-bytes-as-list-big-endian key) (- (glx-32->int key-size)))
+      (cl-subseq (glx-32-get-bytes-as-list-big-endian key) (- (glx-32->int key-size)))
     (glx-search-load-key key 0 glx-0 glx-0 key-size)))
 
 (defun glx-search-struct-start (start count struct-size)
@@ -145,11 +146,11 @@ The value is truncated to the given number of bytes."
       (if (= count int-num-structs)
           (setq result (glx-search-failure options))
         (let ((loaded-key (glx-search-load-key start count struct-size key-offset key-size)))
-          (cond ((and zero-term-flag (not (remove-if #'zerop loaded-key)) (remove-if #'zerop actual-key))
+          (cond ((and zero-term-flag (not (cl-remove-if #'zerop loaded-key)) (cl-remove-if #'zerop actual-key))
                  (setq result (glx-search-failure options)))
                 ((equal actual-key loaded-key)
                  (setq result (glx-search-success start count struct-size options))))))
-      (incf count))
+      (cl-incf count))
     result))
 
 (defun glx-binary-key-compare (key1 key2)
@@ -187,7 +188,7 @@ The value is truncated to the given number of bytes."
       (if end-of-list
           (setq result glx-0)
         (let ((loaded-key (glx-search-load-key start 0 glx-0 key-offset key-size)))
-          (cond ((and zero-term-flag (not (remove-if #'zerop loaded-key)) (remove-if #'zerop actual-key))
+          (cond ((and zero-term-flag (not (cl-remove-if #'zerop loaded-key)) (cl-remove-if #'zerop actual-key))
                  (setq result (glx-search-failure options)))
                 ((equal actual-key loaded-key)
                  (setq result start)))))
@@ -200,8 +201,7 @@ The value is truncated to the given number of bytes."
   (unless (glx-0-p count)
     (let ((ptr (glx-32->int memptr)))
       (dotimes (n (glx-32->int count))
-        (aset *glx-memory* ptr 0)
-        (incf ptr)))))
+        (aset *glx-memory* (+ ptr n) 0)))))
 
 (defun glx-memory-mcopy (count source target)
   (let ((sourcei (glx-32->int source))
@@ -233,11 +233,11 @@ The value is truncated to the given number of bytes."
 
 (defun glx-restore-undo ()
   (when *glx-undo*
-    (setq *glx-memory* (glx-restore-memory-with-protect (first *glx-undo*)))
-    (setq *glx-stack* (second *glx-undo*))
-    (setq *glx-pc* (third *glx-undo*))
-    (let ((undo-store (fourth *glx-undo*)))
-      (funcall (first undo-store) (second undo-store) (glx-32 -1) 4))
+    (setq *glx-memory* (glx-restore-memory-with-protect (car *glx-undo*)))
+    (setq *glx-stack* (cadr *glx-undo*))
+    (setq *glx-pc* (nth 2 *glx-undo*))
+    (let ((undo-store (nth 3 *glx-undo*)))
+      (funcall (car undo-store) (cadr undo-store) (glx-32 -1) 4))
     (setq *glx-undo* nil)
     t))
 
@@ -246,17 +246,17 @@ The value is truncated to the given number of bytes."
 
 (defun glx-iosys-charfun ()
   (if *glx-iosys*
-      (first *glx-iosys*)
+      (car *glx-iosys*)
     (signal 'glx-glk-error (list "No iosys selected"))))
 
 (defun glx-iosys-rock ()
   (if *glx-iosys*
-      (second *glx-iosys*)
+      (cadr *glx-iosys*)
     (signal 'glx-glk-error (list "No iosys selected"))))
 
 (defun glx-iosys-id ()
   (if *glx-iosys*
-      (third *glx-iosys*)
+      (nth 2 *glx-iosys*)
     (signal 'glx-glk-error (list "No iosys selected"))))
 
 (defun glx-set-memory-size (new-size)

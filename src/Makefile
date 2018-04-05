@@ -1,4 +1,4 @@
-EMACS=emacs -q -batch --no-site-file --eval
+EMACS=/Applications/Emacs.app/Contents/MacOS/Emacs-x86_64-10_9 -q -batch --no-site-file --eval
 GLK=../glk/src
 
 glx-value.elc: glx-value.el

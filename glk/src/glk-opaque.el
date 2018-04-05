@@ -9,8 +9,7 @@
 ;; This file is licensed under the terms of the GNU General Public
 ;; License as distributed with Emacs (press C-h C-c to view it).
 
-(eval-when-compile
-  (require 'cl))
+(require 'cl-lib)
 
 (defun glki-get-rock (object)
   (get object 'rock))
@@ -24,7 +23,7 @@
 
 (defmacro defopaque (name &rest slots)
   (let ((name-string (symbol-name name)))
-    (cl-flet ((make-symbol (prefix &optional suffix) (intern (concat prefix name-string suffix))))
+    (cl-labels ((make-symbol (prefix &optional suffix) (intern (concat prefix name-string suffix))))
       (let ((arg-name (make-symbol "glk-"))
             (id-name (make-symbol "glk-" "-id"))
             (slots (cons 'rock slots)))

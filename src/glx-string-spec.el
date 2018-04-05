@@ -9,13 +9,15 @@
 ;; This file is licensed under the terms of the GNU General Public
 ;; License as distributed with Emacs (press C-h C-c to view it).
 
+(require 'cl-lib)
+
 (defmacro check-string (expected-result expected-call-count memptr)
   (declare (indent 2))
-  (let ((result (gensym))
-        (call-count (gensym)))
+  (let ((result (cl-gensym))
+        (call-count (cl-gensym)))
     `(let* ((,result "")
             (,call-count 0)
-            (*glx-iosys* (list (lambda (c) (incf ,call-count) (setq ,result (concat ,result (list c)))) glx-0 glx-2)))
+            (*glx-iosys* (list (lambda (c) (cl-incf ,call-count) (setq ,result (concat ,result (list c)))) glx-0 glx-2)))
        (glx-get-string ,memptr #'glx-call-function-and-return-to-emacs)
        (should (equal ,result ,expected-result))
        (should (= ,call-count ,expected-call-count)))))

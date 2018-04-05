@@ -9,9 +9,6 @@
 ;; This file is licensed under the terms of the GNU General Public
 ;; License as distributed with Emacs (press C-h C-c to view it).
 
-(eval-when-compile
-  (require 'cl))
-
 (require 'glk-window)
 (require 'glk-base)
 
@@ -112,10 +109,10 @@
       'glk-no-return)))
 
 (defun glki-get-event-type (event)
-  (first event))
+  (car event))
 
 (defun glki-get-event-window (event)
-  (second event))
+  (cadr event))
 
 (defun glki-mode-add-input-to-event-queue ()
   "Take the last line of input and add it as an event to the event queue."
@@ -144,6 +141,6 @@
   (interactive)
   (when (glki-get-char-event-request (glki-get-window-id (current-buffer)))
     (glki-add-event-to-queue
-     (glki-create-char-input-event last-command-char))))
+     (glki-create-char-input-event last-command-event))))
 
 (provide 'glk-event)
