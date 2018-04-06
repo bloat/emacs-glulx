@@ -69,10 +69,10 @@
 (puthash #x2a (list #'glk-window-clear
                     (list #'glx-32->glk-opq 0)) *glx-glk-functions*)
 
-(puthash #x2b (list (lambda (a b c) nil)
-                    (list #'identity 0)
-                    (list #'identity 1)
-                    (list #'identity 2)) *glx-glk-functions*)
+(puthash #x2b (list #'glk-window-move-cursor
+                    (list #'glx-32->glk-opq 0)
+                    (list #'glx-32->int 1)
+                    (list #'glx-32->int 2)) *glx-glk-functions*)
 
 (puthash #x2f (list #'glk-set-window
                     (list #'glx-32->glk-opq 0)) *glx-glk-functions*)
@@ -282,7 +282,10 @@ entire glk call."
 (defun glx-glk-opq->glx-32 (value)
   (if (null value)
       glx-0
-    (apply #'glx-32 (nreverse (read (symbol-name value))))))
+    (let ((opq-symbol (read (symbol-name value))))
+      (if (symbolp opq-symbol)
+          opq-symbol
+        (apply #'glx-32 (nreverse opq-symbol))))))
 
 (defun glx-glk-result->32 (result)
   (cond ((null result) glx-0)

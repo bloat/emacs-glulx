@@ -26,6 +26,14 @@
   (use-hard-newlines)
   (visual-line-mode))
 
+(defvar glk-text-grid-mode-map nil "Map for GLK text grid mode")
+
+(define-derived-mode glk-text-grid-mode nil "GLK-TG"
+  "Major mode for interacting with GLK based programs.
+\\{glk-text-grid-mode-map}"
+  (use-hard-newlines)
+  (overwrite-mode))
+
 ;; All GLK Windows
 
 (defopaque window first-child second-child buffer type is-key glk-line-event glk-char-event stream)
@@ -50,13 +58,10 @@
   (let ((buffer (if (eq type 'glk-wintype-pair)
                     nil
                   (generate-new-buffer "*glk*"))))
-    (if (eq 'glk-wintype-text-grid type)
-      (with-current-buffer buffer
-        (setq buffer-read-only t)))
     (let ((new-window (glki-opq-window-create new-window-id)))
       (glki-opq-window-set-buffer new-window buffer)
       (glki-opq-window-set-type new-window type)
-      (glki-opq-window-set-stream new-window (glki-create-window-stream new-window-id new-stream-id))
+      (glki-opq-window-set-stream new-window (glki-create-window-stream type new-window-id new-stream-id))
       (glki-opq-window-set-rock new-window rock)
       (glki-set-glk-mode new-window-id)
       new-window)))
@@ -82,7 +87,9 @@
   "Sets glk-mode on the buffer for the given glk-window"
   (when (glki-opq-window-get-buffer glk-window)
     (with-current-buffer (glki-opq-window-get-buffer glk-window)
-      (glk-mode))))
+      (if (eq (glki-opq-window-get-type glk-window) 'glk-wintype-text-grid)
+          (glk-text-grid-mode)
+        (glk-mode)))))
 
 (defun glki-get-emacs-window (glk-window)
   "Returns the emacs windows displaying the given glk window"
@@ -166,11 +173,11 @@
           (insert "\n"))
         (move-to-column xpos t)))))
 
-(defun glki-create-window-stream (glk-window stream-id)
+(defun glki-create-window-stream (window-type glk-window stream-id)
   "Create a stream for this window. Use this stream id."
   (let ((stream (glki-opq-stream-create stream-id)))
     (glki-opq-stream-set-buffer stream (glki-opq-window-get-buffer glk-window))
-    (glki-opq-stream-set-type stream 'glki-window-stream)
+    (glki-opq-stream-set-type stream (if (eq window-type 'glk-wintype-text-grid) 'glki-window-stream-text-grid 'glki-window-stream-text-buffer))
     stream))
 
 (defun glk-set-window (win)
