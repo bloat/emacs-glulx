@@ -41,7 +41,7 @@
   :tags '(glk event)
   (unwind-protect
       (progn
-        (glki-generate-new-window 'glk-wintype-text-buffer1 'window 'stream 0)
+        (glki-generate-new-window 'glk-wintype-text-buffer 'window 'stream 0)
         (setq glk-root-window 'window)
         (with-current-buffer (glki-opq-window-get-buffer 'window)
           (let ((event (glki-create-line-input-event "go north" '0x3456)))

@@ -108,6 +108,12 @@
                     (list #'glx-32->int 1)
                     (list #'glx-get-next-glk-id)) *glx-glk-functions*)
 
+(puthash #x61 (list #'glk-fileref-create-by-name
+                    (list #'glx-32->int 0)
+                    (list #'glx-glk-load-string 1)
+                    (list #'glx-32->int 2)
+                    (list #'glx-get-next-glk-id)) *glx-glk-functions*)
+
 (puthash #x63 (list #'glk-fileref-destroy
                     (list #'glx-32->glk-opq 0)) *glx-glk-functions*)
 
@@ -122,16 +128,33 @@
                     (list #'glx-32->glk-opq 0)) *glx-glk-functions*)
 
 (puthash #x80 (list #'glk-put-char
-                    (list (lambda (c) (nth 3 (glx-32-get-bytes-as-list-big-endian c))) 0)) *glx-glk-functions*)
+                    (list #'glx-32->int 0)) *glx-glk-functions*)
+
+(puthash #x81 (list #'glk-put-char-stream
+                    (list #'glx-32->glk-opq 0)
+                    (list #'glx-32->int 1)) *glx-glk-functions*)
 
 (puthash #x82 (list #'glk-put-string
                     (list #'glx-glk-load-string 0)) *glx-glk-functions*)
 
+(puthash #x83 (list #'glk-put-string-stream
+                    (list #'glx-32->glk-opq 0)
+                    (list #'glx-glk-load-string 1)) *glx-glk-functions*)
+
 (puthash #x84 (list #'glk-put-string
                     (list #'glx-glk-load-string-buffer 0 1)) *glx-glk-functions*)
 
+(puthash #x85 (list #'glk-put-string-stream
+                    (list #'glx-32->glk-opq 0)
+                    (list #'glx-glk-load-string-buffer 1 2)) *glx-glk-functions*)
+
 (puthash #x86 (list #'glk-set-style
                     (list #'glx-32->glk-style 0)) *glx-glk-functions*)
+
+(puthash #x92 (list #'glk-get-buffer-stream
+                    (list #'glx-32->glk-opq 0)
+                    (list #'glx-32->int 2)
+                    (list (list 1) (list 1) #'glx-glk-store-string)) *glx-glk-functions*)
 
 (puthash #xa0 (list #'glk-char-to-lower
                     (list #'glx-32->int 0)) *glx-glk-functions*)
@@ -158,6 +181,15 @@
                      (list #'glx-glk-load-unicode-string-buffer 0 2)
                      (list (list 0 1) (list 1) #'glx-glk-store-unicode-string-buffer)) *glx-glk-functions*)
 
+(puthash #x121 (list #'glk-buffer-to-upper-case-uni
+                     (list #'glx-glk-load-unicode-string-buffer 0 2)
+                     (list (list 0 1) (list 1) #'glx-glk-store-unicode-string-buffer)) *glx-glk-functions*)
+
+(puthash #x122 (list #'glk-buffer-to-title-case-uni
+                     (list #'glx-glk-load-unicode-string-buffer 0 2)
+                     (list #'glx-32->glk-boolean 3)
+                     (list (list 0 1) (list 1) #'glx-glk-store-unicode-string-buffer)) *glx-glk-functions*)
+
 (puthash #x128 (list #'glk-put-char
                      (list #'glx-32->int 0)) *glx-glk-functions*)
 
@@ -166,6 +198,26 @@
 
 (puthash #x12a (list #'glk-put-string
                      (list #'glx-glk-load-unicode-string-buffer 0 1)) *glx-glk-functions*)
+
+(puthash #x12b (list #'glk-put-char-stream
+                     (list #'glx-32->glk-opq 0)
+                     (list #'glx-32->int 1)) *glx-glk-functions*)
+
+(puthash #x12c (list #'glk-put-string-stream
+                     (list #'glx-32->glk-opq 0)
+                     (list #'glx-glk-load-string-uni 1)) *glx-glk-functions*)
+
+(puthash #x12d (list #'glk-put-string-stream
+                     (list #'glx-32->glk-opq 0)
+                     (list #'glx-glk-load-unicode-string-buffer 1 2)) *glx-glk-functions*)
+
+(puthash #x130 (list #'glk-get-char-stream
+                     (list #'glx-32->glk-opq 0)) *glx-glk-functions*)
+
+(puthash #x131 (list #'glk-get-buffer-stream
+                    (list #'glx-32->glk-opq 0)
+                    (list #'glx-32->int 2)
+                    (list (list 1) (list 1) #'glx-glk-store-string-uni)) *glx-glk-functions*)
 
 (puthash #x138 (list #'glk-stream-open-file-uni
                      (list #'glx-32->glk-opq 0)
@@ -279,6 +331,9 @@ entire glk call."
    ((= value 0) 'glk-gestalt-version)
    ((= value 15) 'glk-gestalt-unicode)))
 
+(defun glx-32->glk-boolean (value)
+  (not (glx-0-p value)))
+
 (defun glx-glk-opq->glx-32 (value)
   (if (null value)
       glx-0
@@ -381,6 +436,16 @@ the read count and the write count and the data from STREAM."
     (dotimes (i (glx-32->int buflen) (apply #'string (nreverse chars)))
       (push (glx-32->unicode-char (glx-memory-get-32 memptr)) chars)
       (setq memptr (glx-+ glx-4 memptr)))))
+
+(defun glx-glk-store-string (string memptr)
+  (dotimes (n (length string))
+    (glx-memory-set memptr (aref string n) 1)
+    (setq memptr (glx-+1 memptr))))
+
+(defun glx-glk-store-string-uni (string memptr)
+  (dotimes (n (length string))
+    (glx-memory-set memptr (glx-32 (aref string n)) 4)
+    (setq memptr (glx-+ memptr glx-4))))
 
 (defun glx-glk-store-unicode-string-buffer (str memptr buflen)
   (dotimes (i (glx-32->int buflen))

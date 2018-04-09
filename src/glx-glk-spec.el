@@ -145,3 +145,33 @@
                         (list #'glx-glk-load-unicode-string-buffer 0 1)) *glx-glk-functions*)
     (should (equal (glx-glk-call #x40 2) glx-5))
     (should fun-called)))
+
+(ert-deftest storing-a-string-return-value-from-a-glk-function ()
+  "Storing a string return value from a glk-function"
+  :tags '(glk)
+  (let (fun-called
+        (*glx-glk-functions* (make-hash-table))
+        (*glx-stack* (list (list (list glx-1))))
+        (*glx-memory* (make-vector 6 0)))
+    (puthash #x40 (list (lambda ()
+                          (setq fun-called t)
+                          (list 5 "hello"))
+                        (list (list 0) (list 1) #'glx-glk-store-string)) *glx-glk-functions*)
+    (should (equal (glx-glk-call #x40 1) glx-5))
+    (should fun-called)
+    (should (equal *glx-memory* [0 104 101 108 108 111]))))
+
+(ert-deftest storing-a-unicode-string-return-value-from-a-glk-function ()
+  "Storing a unicode string return value from a glk-function"
+  :tags '(glk)
+  (let (fun-called
+        (*glx-glk-functions* (make-hash-table))
+        (*glx-stack* (list (list (list glx-4))))
+        (*glx-memory* (make-vector 24 0)))
+    (puthash #x40 (list (lambda ()
+                          (setq fun-called t)
+                          (list 5 "hello"))
+                        (list (list 0) (list 1) #'glx-glk-store-string-uni)) *glx-glk-functions*)
+    (should (equal (glx-glk-call #x40 1) glx-5))
+    (should fun-called)
+    (should (equal *glx-memory* [0 0 0 0 0 0 0 104 0 0 0 101 0 0 0 108 0 0 0 108 0 0 0 111]))))

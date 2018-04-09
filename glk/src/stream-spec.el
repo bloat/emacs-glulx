@@ -27,9 +27,9 @@
     (clean-up-and-check
      (let ((buffer (get-buffer-create "*glk*")))
        (put 'window 'buffer buffer)
-       (let ((stream (glki-create-window-stream 'window 'a-stream)))
+       (let ((stream (glki-create-window-stream 'glk-wintype-text-buffer 'window 'a-stream)))
          (should (equal (glki-opq-stream-get-buffer stream) buffer))
-         (should (equal (glki-opq-stream-get-type stream) 'glki-window-stream))))))
+         (should (equal (glki-opq-stream-get-type stream) 'glki-window-stream-text-buffer))))))
 
   (ert-deftest glki-create-window-stream-should-add-the-stream-to-the-collection ()
     "glki-create-window-stream should add the stream to the collection"
@@ -37,7 +37,7 @@
     (clean-up-and-check
      (let ((buffer (get-buffer-create "*glk*")))
        (put 'window 'buffer buffer)
-       (let ((stream (glki-create-window-stream 'window 'a-stream)))
+       (let ((stream (glki-create-window-stream 'glk-wintype-text-buffer 'window 'a-stream)))
          (should (equal (glk-stream-iterate nil) (list stream nil)))))))
 
   (ert-deftest glk-set-window-should-set-the-current-stream-to-be-that-buffer ()
@@ -107,8 +107,9 @@
      (with-current-buffer "*glk*"
        (insert "You are in a room")
        (goto-char (point-min)))
-     (should (equal (glk-get-buffer-stream 'a-stream 5) '("You a" 5)))
-     (should (equal (glk-get-buffer-stream 'a-stream 6) '("re in " 6)))))
+     (should (equal (glk-get-buffer-stream 'a-stream 5) '(5 "You a")))
+     (should (equal (glk-get-buffer-stream 'a-stream 6) '(6 "re in ")))
+     (should (equal (glk-get-buffer-stream 'a-stream 20) '(6 "a room")))))
 
   (ert-deftest glk-put-string-should-fill-strings ()
     "glk-put-string should fill strings"
@@ -146,7 +147,7 @@
     (clean-up-and-check
      (let ((buffer (get-buffer-create "*glk*")))
        (put 'window 'buffer buffer)
-       (let ((stream (glki-create-window-stream 'window 'a-stream)))
+       (let ((stream (glki-create-window-stream 'glk-wintype-text-buffer 'window 'a-stream)))
          (should-error (glk-stream-close 'a-stream) :type 'glk-error)))))
 
   (ert-deftest closing-a-stream-kills-its-emacs-buffer ()
