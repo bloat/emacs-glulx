@@ -56,14 +56,15 @@
 
 (defun glk-request-line-event (win buf maxlen initlen)
   (when (not (glki-get-line-event-request win))
-    (glki-add-line-event-request win buf))
+    (glki-add-line-event-request win buf)
+    (with-current-buffer (glki-opq-window-get-buffer win)
+      (use-local-map glk-mode-map)))
   nil)
 
 (defun glk-cancel-line-event (win)
   (if (glki-get-line-event-request win)
       (progn
-        (save-current-buffer
-          (set-buffer (glki-opq-window-get-buffer win))
+        (with-current-buffer (glki-opq-window-get-buffer win)
           (glki-mode-add-input-to-event-queue))
         (glki-get-next-event))
     '(glk-evtype-none nil nil nil nil nil)))
@@ -76,8 +77,7 @@
 (defun glk-request-char-event (win)
   (when (not (glki-get-char-event-request win))
     (put win 'glk-char-event t)
-    (save-current-buffer
-      (set-buffer (glki-opq-window-get-buffer win))
+    (with-current-buffer (glki-opq-window-get-buffer win)
       (use-local-map glk-char-input-mode-map))))
 
 (defun glki-get-char-event-request (glk-window)

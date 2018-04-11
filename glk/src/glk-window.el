@@ -153,8 +153,7 @@
   (glki-dispose-window win))
 
 (defun glk-window-clear (win)
-  (save-current-buffer
-    (set-buffer (glki-opq-window-get-buffer win))
+  (with-current-buffer (glki-opq-window-get-buffer win)
     (let ((inhibit-read-only t))
       (erase-buffer))))
 
@@ -183,5 +182,22 @@
 (defun glk-set-window (win)
   (setq glk-current-stream (glki-opq-window-get-stream win))
   nil)
+
+(defun glk-window-get-parent (win)
+  (let ((windows glki-opq-window)
+        result)
+    (while (and windows (not result))
+      (if (or (eq win (glki-opq-window-get-first-child (car windows)))
+              (eq win (glki-opq-window-get-second-child (car windows))))
+          (setq result (car windows))
+        (setq windows (cdr windows))))
+    result))
+
+(defun glk-window-get-sibling (win)
+  (let ((parent (glk-window-get-parent win)))
+    (when parent
+      (if (eq win (glki-opq-window-get-first-child parent))
+          (glki-opq-window-get-second-child parent)
+        (glki-opq-window-get-first-child parent)))))
 
 (provide 'glk-window)

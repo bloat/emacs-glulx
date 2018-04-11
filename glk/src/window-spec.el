@@ -127,6 +127,20 @@
                       (should (equal (glki-opq-window-get-first-child 'pair) 'window1))
                       (should (equal (glki-opq-window-get-second-child 'pair) 'window2))))
 
+  (ert-deftest a-child-window-should-have-the-right-sibling ()
+    "A child window should have the right sibling"
+    :tags '(glk window)
+    (with-two-windows 'glk-winmethod-right
+                      (should (equal (glk-window-get-sibling 'window1) 'window2))
+                      (should (equal (glk-window-get-sibling 'window2) 'window1))))
+
+  (ert-deftest a-child-window-should-have-the-right-parent ()
+    "A child window should have the right parent"
+    :tags '(glk window)
+    (with-two-windows 'glk-winmethod-right
+                      (should (equal (glk-window-get-parent 'window1) 'pair))
+                      (should (equal (glk-window-get-parent 'window2) 'pair))))
+
   (ert-deftest creating-a-new-window-above-should-leave-the-old-window-below ()
     "Creating a new window above should leave the old window below"
     :tags '(glk window)
@@ -229,15 +243,8 @@
      (glk-set-window 'window1)
      (glk-put-string "Hello")
      (glk-window-clear 'window1)
-     (save-current-buffer
-       (set-buffer "*glk*")
+     (with-current-buffer "*glk*"
        (should (equal (buffer-string) "")))))
-
-  ;;              (specify "Should be able to get window size"
-  ;;                       (with-glk-start-and-end
-  ;;                        (create-two-windows-proportional 'glk-winmethod-above 50)
-  ;;                        (should (glk-window-get-size 'window1) equals '(60 29))
-  ;;                        (should (glk-window-get-size 'window2) equals '(60 29))))
 
   (ert-deftest should-not-be-able-to-change-cursor-position-in-text-buffer-window ()
     "Should not be able to change cursor position in text buffer window"

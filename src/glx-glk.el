@@ -66,6 +66,9 @@
                     (list (list 1) (list 1) #'glx-store-glk-result)
                     (list (list 2) (list 2) #'glx-store-glk-result)) *glx-glk-functions*)
 
+(puthash #x29 (list #'glk-window-get-parent
+                    (list #'glx-32->glk-opq 0)) *glx-glk-functions*)
+
 (puthash #x2a (list #'glk-window-clear
                     (list #'glx-32->glk-opq 0)) *glx-glk-functions*)
 
@@ -75,6 +78,9 @@
                     (list #'glx-32->int 2)) *glx-glk-functions*)
 
 (puthash #x2f (list #'glk-set-window
+                    (list #'glx-32->glk-opq 0)) *glx-glk-functions*)
+
+(puthash #x30 (list #'glk-window-get-sibling
                     (list #'glx-32->glk-opq 0)) *glx-glk-functions*)
 
 (puthash #x40 (list #'glk-stream-iterate
@@ -176,6 +182,9 @@
                     (list #'identity 1)
                     (list #'glx-32->int 2)
                     (list #'glx-32->int 3)) *glx-glk-functions*)
+
+(puthash #xd2 (list #'glk-request-char-event
+                    (list #'glx-32->glk-opq 0)) *glx-glk-functions*)
 
 (puthash #x120 (list #'glk-buffer-to-lower-case-uni
                      (list #'glx-glk-load-unicode-string-buffer 0 2)
@@ -398,6 +407,7 @@ If the memory address is 0 then all results are discarded."
 (defun glx-glk-event-type->int (event-type)
   (cond
    ((eq event-type 'glk-evtype-none) 0)
+   ((eq event-type 'glk-evtype-charinput) 2)
    ((eq event-type 'glk-evtype-lineinput) 3)))
 
 (defun glx-glk-store-event (event memptr)

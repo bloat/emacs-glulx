@@ -23,8 +23,7 @@
     "glki-mode-add-input-to-event-queue should do nothing if no event is requested"
     :tags '(glk mode)
     (with-glk-window
-     (save-current-buffer
-       (set-buffer (glki-opq-window-get-buffer 'window))
+     (with-current-buffer (glki-opq-window-get-buffer 'window)
        (insert "> go north")
        (glki-mode-add-input-to-event-queue))
      (should-not (glki-get-next-event))))
@@ -34,8 +33,7 @@
     :tags '(glk mode)
     (with-glk-window
      (glk-request-line-event 'window '0x3456 100 0)
-     (save-current-buffer
-       (set-buffer (glki-opq-window-get-buffer 'window))
+     (with-current-buffer (glki-opq-window-get-buffer 'window)
        (insert (propertize "> " 'read-only "Game text is read only" 'rear-nonsticky t 'front-sticky t 'glk-text t))
        (insert "go north")
        (glki-mode-add-input-to-event-queue))
@@ -46,8 +44,7 @@
     :tags '(glk mode)
     (with-glk-window
      (glk-request-line-event 'window '0x3456 100 0)
-     (save-current-buffer
-       (set-buffer (glki-opq-window-get-buffer 'window))
+     (with-current-buffer (glki-opq-window-get-buffer 'window)
        (insert (propertize "What next? " 'read-only "Game text is read only" 'rear-nonsticky t 'front-sticky t 'glk-text t))
        (insert "go north")
        (glki-mode-add-input-to-event-queue))
@@ -58,8 +55,7 @@
     :tags '(glk mode)
     (with-glk-window
      (glk-request-line-event 'window '0x3456 100 0)
-     (save-current-buffer
-       (set-buffer (glki-opq-window-get-buffer 'window))
+     (with-current-buffer (glki-opq-window-get-buffer 'window)
        (insert (propertize "What next? " 'read-only "Game text is read only" 'rear-nonsticky t 'front-sticky t 'glk-text t))
        (glki-mode-add-input-to-event-queue))
      (should (equal (glki-get-next-event) '(glk-evtype-lineinput window 0 0 0x3456 "")))))
@@ -77,7 +73,6 @@
     (with-glk-window
      (glk-request-char-event 'window)
      (setq last-command-event 100)
-     (save-current-buffer
-       (set-buffer (glki-opq-window-get-buffer 'window))
+     (with-current-buffer (glki-opq-window-get-buffer 'window)
        (glki-press-any-key)
        (should (equal (glki-get-next-event) '(glk-evtype-charinput window 100 0)))))))
