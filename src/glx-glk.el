@@ -47,11 +47,11 @@
                     (list #'glx-32->int 1)) *glx-glk-functions*)
 
 (puthash #x20 (list #'glk-window-iterate
-                    (list #'glx-32->glk-opq 0)
+                    (list #'glx-32->glk-window 0)
                     (list (list 1) (list 1) #'glx-store-glk-result)) *glx-glk-functions*)
 
 (puthash #x23 (list #'glk-window-open
-                    (list #'glx-32->glk-opq 0)
+                    (list #'glx-32->glk-window 0)
                     (list #'glx-32->glk-winmethod 1)
                     (list #'glx-32->int 2)
                     (list #'glx-32->glk-wintype 3)
@@ -62,33 +62,33 @@
                     (list #'glx-get-next-glk-id)) *glx-glk-functions*)
 
 (puthash #x25 (list #'glk-window-get-size
-                    (list #'glx-32->glk-opq 0)
+                    (list #'glx-32->glk-window 0)
                     (list (list 1) (list 1) #'glx-store-glk-result)
                     (list (list 2) (list 2) #'glx-store-glk-result)) *glx-glk-functions*)
 
 (puthash #x29 (list #'glk-window-get-parent
-                    (list #'glx-32->glk-opq 0)) *glx-glk-functions*)
+                    (list #'glx-32->glk-window 0)) *glx-glk-functions*)
 
 (puthash #x2a (list #'glk-window-clear
-                    (list #'glx-32->glk-opq 0)) *glx-glk-functions*)
+                    (list #'glx-32->glk-window 0)) *glx-glk-functions*)
 
 (puthash #x2b (list #'glk-window-move-cursor
-                    (list #'glx-32->glk-opq 0)
+                    (list #'glx-32->glk-window 0)
                     (list #'glx-32->int 1)
                     (list #'glx-32->int 2)) *glx-glk-functions*)
 
 (puthash #x2f (list #'glk-set-window
-                    (list #'glx-32->glk-opq 0)) *glx-glk-functions*)
+                    (list #'glx-32->glk-window 0)) *glx-glk-functions*)
 
 (puthash #x30 (list #'glk-window-get-sibling
-                    (list #'glx-32->glk-opq 0)) *glx-glk-functions*)
+                    (list #'glx-32->glk-window 0)) *glx-glk-functions*)
 
 (puthash #x40 (list #'glk-stream-iterate
-                    (list #'glx-32->glk-opq 0)
+                    (list #'glx-32->glk-stream 0)
                     (list (list 1) (list 1) #'glx-store-glk-result)) *glx-glk-functions*)
 
 (puthash #x42 (list #'glk-stream-open-file
-                    (list #'glx-32->glk-opq 0)
+                    (list #'glx-32->glk-fileref 0)
                     (list #'glx-32->glk-filemode 1)
                     (list #'glx-32->int 2)
                     (list #'glx-get-next-glk-id)) *glx-glk-functions*)
@@ -101,11 +101,11 @@
                     (list #'glx-get-next-glk-id)) *glx-glk-functions*)
 
 (puthash #x44 (list #'glk-stream-close
-                    (list #'glx-32->glk-opq 0)
+                    (list #'glx-32->glk-stream 0)
                     (list (list 1) (list 1) #'glx-glk-store-closed-stream)) *glx-glk-functions*)
 
 (puthash #x47 (list #'glk-stream-set-current
-                    (list #'glx-32->glk-opq 0)) *glx-glk-functions*)
+                    (list #'glx-32->glk-stream 0)) *glx-glk-functions*)
 
 (puthash #x48 (list #'glk-stream-get-current) *glx-glk-functions*)
 
@@ -121,44 +121,44 @@
                     (list #'glx-get-next-glk-id)) *glx-glk-functions*)
 
 (puthash #x63 (list #'glk-fileref-destroy
-                    (list #'glx-32->glk-opq 0)) *glx-glk-functions*)
+                    (list #'glx-32->glk-fileref 0)) *glx-glk-functions*)
 
 (puthash #x64 (list #'glk-fileref-iterate
-                    (list #'glx-32->glk-opq 0)
+                    (list #'glx-32->glk-fileref 0)
                     (list (list 1) (list 1) #'glx-store-glk-result)) *glx-glk-functions*)
 
 (puthash #x66 (list #'glk-fileref-delete-file
-                    (list #'glx-32->glk-opq 0)) *glx-glk-functions*)
+                    (list #'glx-32->glk-fileref 0)) *glx-glk-functions*)
 
 (puthash #x67 (list #'glk-fileref-does-file-exist
-                    (list #'glx-32->glk-opq 0)) *glx-glk-functions*)
+                    (list #'glx-32->glk-fileref 0)) *glx-glk-functions*)
 
 (puthash #x80 (list #'glk-put-char
                     (list #'glx-32->int 0)) *glx-glk-functions*)
 
 (puthash #x81 (list #'glk-put-char-stream
-                    (list #'glx-32->glk-opq 0)
+                    (list #'glx-32->glk-stream 0)
                     (list #'glx-32->int 1)) *glx-glk-functions*)
 
 (puthash #x82 (list #'glk-put-string
                     (list #'glx-glk-load-string 0)) *glx-glk-functions*)
 
 (puthash #x83 (list #'glk-put-string-stream
-                    (list #'glx-32->glk-opq 0)
+                    (list #'glx-32->glk-stream 0)
                     (list #'glx-glk-load-string 1)) *glx-glk-functions*)
 
 (puthash #x84 (list #'glk-put-string
                     (list #'glx-glk-load-string-buffer 0 1)) *glx-glk-functions*)
 
 (puthash #x85 (list #'glk-put-string-stream
-                    (list #'glx-32->glk-opq 0)
+                    (list #'glx-32->glk-stream 0)
                     (list #'glx-glk-load-string-buffer 1 2)) *glx-glk-functions*)
 
 (puthash #x86 (list #'glk-set-style
                     (list #'glx-32->glk-style 0)) *glx-glk-functions*)
 
 (puthash #x92 (list #'glk-get-buffer-stream
-                    (list #'glx-32->glk-opq 0)
+                    (list #'glx-32->glk-stream 0)
                     (list #'glx-32->int 2)
                     (list (list 1) (list 1) #'glx-glk-store-string)) *glx-glk-functions*)
 
@@ -178,13 +178,13 @@
                     (list #'identity 0)) *glx-glk-functions*)
 
 (puthash #xd0 (list #'glk-request-line-event
-                    (list #'glx-32->glk-opq 0)
+                    (list #'glx-32->glk-window 0)
                     (list #'identity 1)
                     (list #'glx-32->int 2)
                     (list #'glx-32->int 3)) *glx-glk-functions*)
 
 (puthash #xd2 (list #'glk-request-char-event
-                    (list #'glx-32->glk-opq 0)) *glx-glk-functions*)
+                    (list #'glx-32->glk-window 0)) *glx-glk-functions*)
 
 (puthash #x120 (list #'glk-buffer-to-lower-case-uni
                      (list #'glx-glk-load-unicode-string-buffer 0 2)
@@ -209,27 +209,27 @@
                      (list #'glx-glk-load-unicode-string-buffer 0 1)) *glx-glk-functions*)
 
 (puthash #x12b (list #'glk-put-char-stream
-                     (list #'glx-32->glk-opq 0)
+                     (list #'glx-32->glk-stream 0)
                      (list #'glx-32->int 1)) *glx-glk-functions*)
 
 (puthash #x12c (list #'glk-put-string-stream
-                     (list #'glx-32->glk-opq 0)
+                     (list #'glx-32->glk-stream 0)
                      (list #'glx-glk-load-string-uni 1)) *glx-glk-functions*)
 
 (puthash #x12d (list #'glk-put-string-stream
-                     (list #'glx-32->glk-opq 0)
+                     (list #'glx-32->glk-stream 0)
                      (list #'glx-glk-load-unicode-string-buffer 1 2)) *glx-glk-functions*)
 
 (puthash #x130 (list #'glk-get-char-stream
-                     (list #'glx-32->glk-opq 0)) *glx-glk-functions*)
+                     (list #'glx-32->glk-stream 0)) *glx-glk-functions*)
 
 (puthash #x131 (list #'glk-get-buffer-stream
-                    (list #'glx-32->glk-opq 0)
+                    (list #'glx-32->glk-stream 0)
                     (list #'glx-32->int 2)
                     (list (list 1) (list 1) #'glx-glk-store-string-uni)) *glx-glk-functions*)
 
 (puthash #x138 (list #'glk-stream-open-file-uni
-                     (list #'glx-32->glk-opq 0)
+                     (list #'glx-32->glk-fileref 0)
                      (list #'glx-32->glk-filemode 1)
                      (list #'glx-32->int 2)
                      (list #'glx-get-next-glk-id)) *glx-glk-functions*)
@@ -296,8 +296,14 @@ entire glk call."
     (glx-log "Last glk return value %S" glk-call-result)
     glk-call-result))
 
-(defun glx-32->glk-opq (value)
-  (if (glx-0-p value) nil (intern (prin1-to-string (glx-32-get-bytes-as-list-big-endian value)))))
+(defun glx-32->glk-stream (value)
+  (if (glx-0-p value) nil (glki-opq-stream-lookup (intern (prin1-to-string (glx-32-get-bytes-as-list-big-endian value))))))
+
+(defun glx-32->glk-window (value)
+  (if (glx-0-p value) nil (glki-opq-window-lookup (intern (prin1-to-string (glx-32-get-bytes-as-list-big-endian value))))))
+
+(defun glx-32->glk-fileref (value)
+  (if (glx-0-p value) nil (glki-opq-fileref-lookup (intern (prin1-to-string (glx-32-get-bytes-as-list-big-endian value))))))
 
 (defconst glk-winmethod-position-decode
   '((3 glk-winmethod-below) (2 glk-winmethod-above) (1 glk-winmethod-right) (0 glk-winmethod-left)))
@@ -354,7 +360,10 @@ entire glk call."
 (defun glx-glk-result->32 (result)
   (cond ((null result) glx-0)
         ((and (booleanp result) result) glx-1)
-        ((symbolp result) (glx-glk-opq->glx-32 result))
+        ((glki-opq-window-p result) (glx-glk-opq->glx-32 (glki-opq-window-glk-window-id result)))
+        ((glki-opq-stream-p result) (glx-glk-opq->glx-32 (glki-opq-stream-glk-stream-id result)))
+        ((glki-opq-fileref-p result) (glx-glk-opq->glx-32 (glki-opq-fileref-glk-fileref-id result)))
+        ((symbolp result) result)
         ((numberp result) (glx-32 result))
         ((listp result) result)
         (t (signal 'glx-glk-error (list "Unknown glk result type:" result)))))
@@ -378,7 +387,7 @@ glk call."
 
 (defun glx-glk-select-poll (event-memptr)
   (glx-glk-store-event (list 'glk-evtype-none
-                             (glx-32->glk-opq glx-0)
+                             (glx-32->glk-window glx-0)
                              0
                              0) event-memptr))
 
@@ -414,7 +423,7 @@ If the memory address is 0 then all results are discarded."
   (glx-log "storing event to location: %S - %S" memptr event)
   (glx-store-glk-structure memptr
                            (list (glx-32 (glx-glk-event-type->int (car event)))
-                                 (glx-glk-opq->glx-32 (cadr event))
+                                 (if (cadr event) (glx-glk-opq->glx-32 (glki-opq-window-glk-window-id (cadr event))) glx-0)
                                  (glx-32 (nth 2 event))
                                  (glx-32 (nth 3 event))))
   (when (eq (car event) 'glk-evtype-lineinput)

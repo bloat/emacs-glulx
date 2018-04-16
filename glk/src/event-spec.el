@@ -13,11 +13,10 @@
   "glk-request-line-event primes window for input"
   :tags '(glk event)
   (unwind-protect
-      (progn
-        (glki-generate-new-window 'glk-wintype-text-buffer 'window 'stream 0)
-        (glk-request-line-event 'window "0x3456" 25 0)
-        (should (glki-get-line-event-request 'window)))
-    (glki-dispose-window 'window)))
+      (let ((window (glki-generate-new-window 'glk-wintype-text-buffer 'window 'stream 0)))
+        (glk-request-line-event window "0x3456" 25 0)
+        (should (glki-get-line-event-request window)))
+    (glki-kill-all-windows)))
 
 (ert-deftest glki-get-next-event-should-get-the-next-event ()
   "glki-get-next-event should get the next event"
@@ -40,21 +39,22 @@
   "glki-create-line-input-event should create an event"
   :tags '(glk event)
   (unwind-protect
-      (progn
-        (glki-generate-new-window 'glk-wintype-text-buffer 'window 'stream 0)
-        (setq glk-root-window 'window)
-        (with-current-buffer (glki-opq-window-get-buffer 'window)
+      (let ((window (glki-generate-new-window 'glk-wintype-text-buffer 'window 'stream 0)))
+        (setq glk-root-window window)
+        (with-current-buffer (glki-opq-window-buffer window)
           (let ((event (glki-create-line-input-event "go north" '0x3456)))
-            (should (equal event '(glk-evtype-lineinput window 8 0 0x3456 "go north")))
-            (should (equal (glki-get-line-event-window event) 'window)))))
-    (glki-dispose-window 'window)
+            (should (equal event (list 'glk-evtype-lineinput window 8 0 '0x3456 "go north")))
+            (should (eq (glki-get-line-event-window event) window)))))
+    (glki-kill-all-windows)
     (setq glk-root-window nil)))
 
 (ert-deftest glk-select-should-return-the-latest-event ()
   "glk-select should return the latest event"
   :tags '(glk event)
-  (let ((glk-event-queue '((glk-evtype-lineinput window 8 0 0x3456 "go north"))))
-    (should (equal (glk-select) '(glk-evtype-lineinput window 8 0 0x3456 "go north")))))
+  (let* ((window (glki-generate-new-window 'glk-wintype-text-buffer 'window 'stream 0))
+         (event (list 'glk-evtype-lineinput window 8 0 '0x3456 "go north"))
+         (glk-event-queue (list event)))
+    (should (equal (glk-select) event))))
 
 (ert-deftest glk-select-should-signal-no-return-value-if-there-is-no-event ()
   "glk-select should signal no return value if there is no event"
@@ -75,56 +75,55 @@
   "glk-select should remove the line event request from the window"
   :tags '(glk event)
   (unwind-protect
-      (let ((glk-event-queue '((glk-evtype-lineinput window 8 0 0x3456 "go north"))))
-        (glki-add-line-event-request 'window '0x3456)
+      (let* ((window (glki-generate-new-window 'glk-wintype-text-buffer 'window 'stream 0))
+             (glk-event-queue (list (list 'glk-evtype-lineinput window 8 0 '0x3456 "go north"))))
+        (glki-add-line-event-request window '0x3456)
         (glk-select)
-        (should-not (glki-get-line-event-request 'window)))
-    (glki-dispose-window 'window)))
+        (should-not (glki-get-line-event-request window)))
+    (glki-kill-all-windows)))
 
 (ert-deftest glk-select-should-remove-the-char-event-request-from-the-window ()
   "glk-select should remove the char event request from the window"
   :tags '(glk event)
   (unwind-protect
-      (let ((glk-event-queue '((glk-evtype-charinput window 100 0))))
-        (put 'window 'glk-char-event t)
+      (let* ((window (glki-generate-new-window 'glk-wintype-text-buffer 'window 'stream 0))
+             (glk-event-queue (list (list 'glk-evtype-charinput window 100 0))))
+        (setf (glki-opq-window-glk-char-event window) t)
         (glk-select)
-        (should-not (glki-get-char-event-request 'window)))
-    (glki-dispose-window 'window)))
+        (should-not (glki-get-char-event-request window)))
+    (glki-kill-all-windows)))
 
 (ert-deftest glk-cancel-line-event-when-no-event-has-been-requested ()
   "glk-cancel-line-event when no event has been requested"
   :tags '(glk event)
-  (should (equal (glk-cancel-line-event 'window) '(glk-evtype-none nil nil nil nil nil))))
+  (let ((window (glki-generate-new-window 'glk-wintype-text-buffer 'window 'stream 0)))
+    (should (equal (glk-cancel-line-event window) '(glk-evtype-none nil nil nil nil nil)))))
 
 (ert-deftest glk-cancel-line-event-should-return-event-data-as-if-the-player-had-hit-return ()
   "glk-cancel-line-event should return event data as if the player had hit return."
   :tags '(glk event)
-  (cl-flet ((test-glki-mode-add-input-to-event-queue () (glki-add-event-to-queue '(glk-evtype-lineinput window 5 0 0x3456 "go no"))))
-    (unwind-protect
-        (progn
-          (advice-add 'glki-mode-add-input-to-event-queue :override #'test-glki-mode-add-input-to-event-queue '((name . test-glki-mode-add-input-to-event-queue)))
-          (glki-generate-new-window 'glk-wintype-text-buffer 'window 'stream 0)
-          (glk-request-line-event 'window '0x3456 25 0)
-          (should (equal (glk-cancel-line-event 'window) '(glk-evtype-lineinput window 5 0 0x3456 "go no"))))
-      (advice-remove 'glki-mode-add-input-to-event-queue 'test-glki-mode-add-input-to-event-queue)
-      (glki-dispose-window 'window))))
+  (unwind-protect
+      (cl-letf (((symbol-function 'glki-mode-add-input-to-event-queue) (lambda () (glki-add-event-to-queue '(glk-evtype-lineinput window 5 0 0x3456 "go no")))))
+        (let ((window (glki-generate-new-window 'glk-wintype-text-buffer 'window 'stream 0)))
+          (glk-request-line-event window '0x3456 25 0)
+          (should (equal (glk-cancel-line-event window) '(glk-evtype-lineinput window 5 0 0x3456 "go no")))))
+    (glki-kill-all-windows)))
 
 (ert-deftest glk-request-char-event-primes-window-for-input ()
   "glk-request-char-event primes window for input"
   :tags '(glk event)
   (unwind-protect
-      (progn
-        (glki-generate-new-window 'glk-wintype-text-buffer 'window 'stream 0)
-        (glk-request-char-event 'window)
-        (should (glki-get-char-event-request 'window)))
-    (glki-dispose-window 'window)))
+      (let ((window (glki-generate-new-window 'glk-wintype-text-buffer 'window 'stream 0)))
+        (glk-request-char-event window)
+        (should (glki-get-char-event-request window)))
+    (glki-kill-all-windows)))
 
 (ert-deftest glk-cancel-char-event-should-remove-the-char-event-request-from-the-window ()
   "glk-cancel-char-event should remove the char event request from the window"
   :tags '(glk event)
   (unwind-protect
-      (progn
-        (put 'window 'glk-char-event t)
-        (glk-cancel-char-event 'window)
-        (should-not (glki-get-char-event-request 'window)))
-    (glki-dispose-window 'window)))
+      (let ((window (glki-generate-new-window 'glk-wintype-text-buffer 'window-id 'stream-id 0)))
+        (setf (glki-opq-window-glk-char-event window) t)
+        (glk-cancel-char-event window)
+        (should-not (glki-get-char-event-request window)))
+    (glki-kill-all-windows)))

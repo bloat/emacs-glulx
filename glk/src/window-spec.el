@@ -11,21 +11,22 @@
 
 (cl-macrolet ((with-test-functions (&body body)
                                    `(cl-labels ((create-two-windows-proportional (new-position size-percentage)
-                                                                                 (glk-window-open (glk-window-open nil nil 0 'glk-wintype-text-buffer 0 'window1 nil 'stream1 'stream2)
-                                                                                                  (list new-position 'glk-winmethod-proportional)
-                                                                                                  size-percentage 'glk-wintype-text-buffer 0 'window2 'pair 'stream3 'stream4))
+                                                                                 (let ((window1 (glk-window-open nil nil 0 'glk-wintype-text-buffer 0 'window1 nil 'stream1 'stream2)))
+                                                                                   (list window1 (glk-window-open window1
+                                                                                                                  (list new-position 'glk-winmethod-proportional)
+                                                                                                                  size-percentage 'glk-wintype-text-buffer 0 'window2 'pair 'stream3 'stream4))))
                                                 (create-two-windows-fixed (new-position size &optional type)
-                                                                          (when (null type) (setq type 'glk-wintype-text-buffer))
-                                                                          (glk-window-open (glk-window-open nil nil 0 'glk-wintype-text-buffer 0 'window1 nil nil nil)
-                                                                                           (list new-position 'glk-winmethod-fixed) size type 0 'window2 'pair nil nil))
-                                                (first-window () (glki-get-emacs-window 'window1))
-                                                (second-window () (glki-get-emacs-window 'window2))
+                                                                          (let ((window1 (glk-window-open nil nil 0 'glk-wintype-text-buffer 0 'window1 nil nil nil)))
+                                                                            (list window1 (glk-window-open window1
+                                                                                                           (list new-position 'glk-winmethod-fixed) size (or type glk-wintype-text-buffer) 0 'window2 'pair nil nil))))
+                                                (first-window () (glki-get-emacs-window (cdr (assq 'window1 glki-opq-window))))
+                                                (second-window () (glki-get-emacs-window (cdr (assq 'window2 glki-opq-window))))
                                                 (bottom-window-p (window) (coordinates-in-window-p (cons 0 (- (frame-height glk-frame) 2)) window))
                                                 (top-window-p (window) (coordinates-in-window-p (cons 0 1) window))
                                                 (right-window-p (window) (coordinates-in-window-p (cons (- (frame-width glk-frame) 1) 1) window))
                                                 (left-window-p (window) (coordinates-in-window-p (cons 0 1) window))
                                                 (number-of-windows-on-glk-frame () (length (window-list glk-frame 'no-minibuffer (first-window))))
-                                                (get-point-in-window (windowid) (with-current-buffer (glki-opq-window-get-buffer windowid) (list (line-number-at-pos) (current-column)))))
+                                                (get-point-in-window (windowid) (with-current-buffer (glki-opq-window-buffer windowid) (list (line-number-at-pos) (current-column)))))
                                       ,@body))
               
               
@@ -43,21 +44,22 @@
               
               (with-two-windows (second-window-position &body body)
                                 `(with-glk-start-and-end
-                                  (create-two-windows-proportional ,second-window-position 50)
-                                  ,@body)))
+                                  (cl-multiple-value-bind (window1 window2) (create-two-windows-proportional ,second-window-position 50)
+                                    (let ((pair (glki-opq-window-lookup 'pair)))
+                                      ,@body)))))
   
   (ert-deftest should-be-able-to-open-the-first-glk-window ()
     "Should be able to open the first glk window"
     :tags '(glk window)
     (with-glk-start-and-end
-     (should (equal (glk-window-open nil 0 0 'glk-wintype-text-buffer 0 'window1 nil nil nil) 'window1))))
+     (should (equal (glki-opq-window-glk-window-id (glk-window-open nil 0 0 'glk-wintype-text-buffer 0 'window1 nil nil nil)) 'window1))))
 
   (ert-deftest should-be-able-to-clean-up-one-window ()
     "Should be able to clean up one window"
     :tags '(glk window)
     (with-glk-start-and-end
      (glk-window-open nil 0 0 'glk-wintype-text-buffer 0 'window1 nil nil nil))
-    (should-not (glki-opq-window-get-buffer 'window1))
+    (should-not glki-opq-window)
     (let ((buf))
       (unwind-protect
           (progn
@@ -76,9 +78,9 @@
     "First window should have null children"
     :tags '(glk window)
     (with-glk-start-and-end
-     (glk-window-open nil 0 0 'glk-wintype-text-buffer 0 'window1 nil nil nil)
-     (should-not (glki-opq-window-get-first-child 'window1))
-     (should-not (glki-opq-window-get-second-child 'window1))))
+     (let ((window1 (glk-window-open nil 0 0 'glk-wintype-text-buffer 0 'window1 nil nil nil)))
+       (should-not (glki-opq-window-first-child window1))
+       (should-not (glki-opq-window-second-child window1)))))
 
   (ert-deftest should-not-be-able-to-open-a-second-first-glk-window ()
     "Should not be able to open a second 'first' glk window"
@@ -98,21 +100,28 @@
     :tags '(glk window)
     (with-glk-start-and-end
      (create-two-windows-proportional 'glk-winmethod-above 50))
-    (should-not (glki-opq-window-get-buffer 'window1))
-    (should-not (glki-opq-window-get-buffer 'window2))
-    (should-not (glki-opq-window-get-buffer 'pair)))
-
+    (should-not glki-opq-window)
+    (let ((buf))
+      (unwind-protect
+          (progn
+            (setq buf (generate-new-buffer "*glk*"))
+            (should (equal (buffer-name buf) "*glk*")))
+        (kill-buffer buf))))
+  
   (ert-deftest should-be-able-to-split-a-split ()
     "Should be able to split a split"
     :tags '(glk window)
     (with-glk-start-and-end
-     (create-two-windows-proportional 'glk-winmethod-above 50)
-     (glk-window-open 'window2 '(glk-winmethod-above glk-winmethod-proportional) 50 'glk-wintype-text-buffer 0 'window3 'pair2 nil nil)
-     (should (equal (glki-opq-window-get-first-child 'pair) 'window1))
-     (should (equal (glki-opq-window-get-second-child 'pair) 'pair2))
-     (should (equal (glki-opq-window-get-first-child 'pair2) 'window2))
-     (should (equal (glki-opq-window-get-second-child 'pair2) 'window3))
-     (should (equal glk-root-window 'pair))))
+     (cl-multiple-value-bind (window1 window2)
+         (create-two-windows-proportional 'glk-winmethod-above 50)
+       (let ((pair (glki-opq-window-lookup 'pair))
+             (window3 (glk-window-open window2 '(glk-winmethod-above glk-winmethod-proportional) 50 'glk-wintype-text-buffer 0 'window3 'pair2 nil nil))
+             (pair2 (glki-opq-window-lookup 'pair2)))
+         (should (eq (glki-opq-window-first-child pair) window1))
+         (should (eq (glki-opq-window-second-child pair) pair2))
+         (should (eq (glki-opq-window-first-child pair2) window2))
+         (should (eq (glki-opq-window-second-child pair2) window3))
+         (should (eq glk-root-window pair))))))
 
   (ert-deftest splitting-a-window-should-create-a-new-window ()
     "Splitting a window should create a new window"
@@ -124,22 +133,22 @@
     "A parent window should have the right children"
     :tags '(glk window)
     (with-two-windows 'glk-winmethod-right
-                      (should (equal (glki-opq-window-get-first-child 'pair) 'window1))
-                      (should (equal (glki-opq-window-get-second-child 'pair) 'window2))))
+                      (should (equal (glki-opq-window-first-child pair) window1))
+                      (should (equal (glki-opq-window-second-child pair) window2))))
 
   (ert-deftest a-child-window-should-have-the-right-sibling ()
     "A child window should have the right sibling"
     :tags '(glk window)
     (with-two-windows 'glk-winmethod-right
-                      (should (equal (glk-window-get-sibling 'window1) 'window2))
-                      (should (equal (glk-window-get-sibling 'window2) 'window1))))
+                      (should (eq (glk-window-get-sibling window1) window2))
+                      (should (eq (glk-window-get-sibling window2) window1))))
 
   (ert-deftest a-child-window-should-have-the-right-parent ()
     "A child window should have the right parent"
     :tags '(glk window)
     (with-two-windows 'glk-winmethod-right
-                      (should (equal (glk-window-get-parent 'window1) 'pair))
-                      (should (equal (glk-window-get-parent 'window2) 'pair))))
+                      (should (eq (glk-window-get-parent window1) pair))
+                      (should (eq (glk-window-get-parent window2) pair))))
 
   (ert-deftest creating-a-new-window-above-should-leave-the-old-window-below ()
     "Creating a new window above should leave the old window below"
@@ -217,32 +226,33 @@
   ;;                        (should (window-width (first-window)) equal 17)
   ;;                        (should (window-width (second-window)) equal 40)))
 
-  (ert-deftest glki-get-window-id-should-return-correct-windowid ()
-    "glki-get-window-id should return correct windowid"
+  (ert-deftest glki-get-window-should-return-correct-window ()
+    "glki-get-window should return correct windowid"
     :tags '(glk window)
     (with-two-windows
      'glk-winmethod-right
-     (should (equal (glki-get-window-id (glki-opq-window-get-buffer 'window1)) 'window1))
-     (should (equal (glki-get-window-id (glki-opq-window-get-buffer 'window2)) 'window2))))
+     (should (eq (glki-get-window (glki-opq-window-buffer window1)) window1))
+     (should (eq (glki-get-window (glki-opq-window-buffer window2)) window2))))
 
   (ert-deftest should-be-able-to-close-a-window ()
     "Should be able to close a window"
     :tags '(glk window)
     (with-glk-start-and-end
-     (create-two-windows-proportional 'glk-winmethod-right 50)
-     (glk-window-close 'window2)
-     (should-not (glki-opq-window-get-buffer 'window2))
-     (should (glki-opq-window-get-buffer 'window1))
-     (should (= (number-of-windows-on-glk-frame) 1))))
+     (cl-multiple-value-bind (window1 window2)
+         (create-two-windows-proportional 'glk-winmethod-right 50)
+       (glk-window-close window2)
+       (should-not (buffer-live-p (glki-opq-window-buffer window2)))
+       (should (glki-opq-window-buffer window1))
+       (should (= (number-of-windows-on-glk-frame) 1)))))
 
   (ert-deftest should-be-able-to-clear-a-window ()
     "Should be able to clear a window"
     :tags '(glk window)
     (with-two-windows
      'glk-winmethod-above
-     (glk-set-window 'window1)
+     (glk-set-window window1)
      (glk-put-string "Hello")
-     (glk-window-clear 'window1)
+     (glk-window-clear window1)
      (with-current-buffer "*glk*"
        (should (equal (buffer-string) "")))))
 
@@ -251,31 +261,33 @@
     :tags '(glk window)
     (with-test-functions
      (unwind-protect
-         (let ((test-window (glki-generate-new-window 'glk-wintype-text-buffer 'window1 'stream 0))
-               (current-point (get-point-in-window 'window1)))
-           (glk-window-move-cursor 'window1 5 5)
-           (should (equal (get-point-in-window 'window1) current-point)))
-       (glki-dispose-window 'window1))))
+         (let* ((window1 (glki-generate-new-window 'glk-wintype-text-buffer 'window1 'stream 0))
+                (current-point (get-point-in-window window1)))
+           (glk-window-move-cursor window1 5 5)
+           (should (equal (get-point-in-window window1) current-point)))
+       (glki-kill-all-windows))))
 
   (ert-deftest text-grid-window-should-be-the-correct-size ()
     "Text Grid window should be the correct size"
     :tags '(glk window)
     (with-glk-start-and-end
-     (create-two-windows-fixed 'glk-winmethod-above 5 'glk-wintype-text-grid)
-     (should (= (cl-caddr (glk-window-get-size 'window2)) 5))))
+     (cl-multiple-value-bind (window1 window2)
+         (create-two-windows-fixed 'glk-winmethod-above 5 'glk-wintype-text-grid)
+       (should (= (cl-caddr (glk-window-get-size window2)) 5)))))
 
   (ert-deftest should-be-able-to-change-cursor-position-in-a-text-grid-window ()
     "Should be able to change cursor position in a text grid window"
     :tags '(glk window)
     (with-glk-start-and-end
-     (create-two-windows-fixed 'glk-winmethod-above 5 'glk-wintype-text-grid)
-     (glk-window-move-cursor 'window2 0 0)
-     (should (equal (get-point-in-window 'window2) (list 1 0)))
-     (glk-window-move-cursor 'window2 1 0)
-     (should (equal (get-point-in-window 'window2) (list 1 1)))
-     (glk-window-move-cursor 'window2 0 1)
-     (should (equal (get-point-in-window 'window2) (list 2 0)))
-     (glk-window-move-cursor 'window2 2 0)
-     (should (equal (get-point-in-window 'window2) (list 1 2)))
-     (glk-window-move-cursor 'window2 1 1)
-     (should (equal (get-point-in-window 'window2) (list 2 1))))))
+     (cl-multiple-value-bind (window1 window2)
+         (create-two-windows-fixed 'glk-winmethod-above 5 'glk-wintype-text-grid)
+       (glk-window-move-cursor window2 0 0)
+       (should (equal (get-point-in-window window2) (list 1 0)))
+       (glk-window-move-cursor window2 1 0)
+       (should (equal (get-point-in-window window2) (list 1 1)))
+       (glk-window-move-cursor window2 0 1)
+       (should (equal (get-point-in-window window2) (list 2 0)))
+       (glk-window-move-cursor window2 2 0)
+       (should (equal (get-point-in-window window2) (list 1 2)))
+       (glk-window-move-cursor window2 1 1)
+       (should (equal (get-point-in-window window2) (list 2 1)))))))

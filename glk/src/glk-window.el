@@ -42,35 +42,31 @@
 
 ;; Creating, getting hold of, and deleting windows
 
-(defun find-window (predicate)
-  (cl-some predicate glki-opq-window))
+(defun glki-find-window (predicate)
+  (cl-some (lambda (win) (funcall predicate (cdr win))) glki-opq-window))
 
-(defun glki-get-window-id (buffer)
-  "Returns the glk window id for the given emacs buffer"
-  (find-window #'(lambda (window) (if (eq buffer (glki-opq-window-get-buffer window)) window))))
+(defun glki-get-window (buffer)
+  "Returns the glk window for the given emacs buffer"
+  (glki-find-window #'(lambda (window) (when (eq buffer (glki-opq-window-buffer window)) window))))
 
 (defun glki-kill-all-windows ()
   "Cleans up all glk windows and destroys the associated buffers"
-  (mapcar #'glki-dispose-window glki-opq-window))
+  (mapcar (lambda (c) (glki-dispose-window (cdr c))) glki-opq-window))
 
 (defun glki-generate-new-window (type new-window-id new-stream-id rock)
   "Generate a new glk window"
-  (let ((buffer (if (eq type 'glk-wintype-pair)
+  (let* ((buffer (if (eq type 'glk-wintype-pair)
                     nil
-                  (generate-new-buffer "*glk*"))))
-    (let ((new-window (glki-opq-window-create new-window-id)))
-      (glki-opq-window-set-buffer new-window buffer)
-      (glki-opq-window-set-type new-window type)
-      (glki-opq-window-set-stream new-window (glki-create-window-stream type new-window-id new-stream-id))
-      (glki-opq-window-set-rock new-window rock)
-      (glki-set-glk-mode new-window-id)
-      new-window)))
+                   (generate-new-buffer "*glk*")))
+         (window (glki-opq-window-create new-window-id rock nil nil buffer type nil nil nil (glki-create-window-stream type buffer new-stream-id))))
+    (glki-set-glk-mode window)
+    window))
 
 (defun glki-dispose-window (window)
-  (if (glki-opq-window-get-stream window)
-      (glki-opq-stream-dispose (glki-opq-window-get-stream window)))
-  (if (glki-opq-window-get-buffer window)
-      (kill-buffer (glki-opq-window-get-buffer window)))
+  (when (glki-opq-window-stream window)
+    (glki-opq-stream-dispose (glki-opq-window-stream window)))
+  (when (glki-opq-window-buffer window)
+    (kill-buffer (glki-opq-window-buffer window)))
   (glki-opq-window-dispose window))
 
 (defun glki-create-first-window (type new-window-id new-stream-id rock)
@@ -78,28 +74,28 @@
   (let ((window-on-glk-frame (frame-first-window glk-frame))
         (new-window (glki-generate-new-window type new-window-id new-stream-id rock)))
      (delete-other-windows window-on-glk-frame)
-    (set-window-buffer window-on-glk-frame (glki-opq-window-get-buffer new-window))
+    (set-window-buffer window-on-glk-frame (glki-opq-window-buffer new-window))
     (setq glk-root-window new-window)))
 
 ;; Getting window properties
 
 (defun glki-set-glk-mode (glk-window)
   "Sets glk-mode on the buffer for the given glk-window"
-  (when (glki-opq-window-get-buffer glk-window)
-    (with-current-buffer (glki-opq-window-get-buffer glk-window)
-      (if (eq (glki-opq-window-get-type glk-window) 'glk-wintype-text-grid)
+  (when (glki-opq-window-buffer glk-window)
+    (with-current-buffer (glki-opq-window-buffer glk-window)
+      (if (eq (glki-opq-window-type glk-window) 'glk-wintype-text-grid)
           (glk-text-grid-mode)
         (glk-mode)))))
 
 (defun glki-get-emacs-window (glk-window)
   "Returns the emacs windows displaying the given glk window"
-  (get-buffer-window (glki-opq-window-get-buffer glk-window) glk-frame))
+  (get-buffer-window (glki-opq-window-buffer glk-window) glk-frame))
 
 (defun glki-fix-parent (old-child new-child)
-  (find-window #'(lambda (win) (cond ((eq (glki-opq-window-get-first-child win) old-child)
-                                 (glki-opq-window-set-first-child win new-child))
-                                ((eq (glki-opq-window-get-second-child win) old-child)
-                                 (glki-opq-window-set-second-child win new-child))))))
+  (glki-find-window (lambda (win) (cond ((eq (glki-opq-window-first-child win) old-child)
+                                         (setf (glki-opq-window-first-child win) new-child))
+                                        ((eq (glki-opq-window-second-child win) old-child)
+                                         (setf (glki-opq-window-second-child win) new-child))))))
 
 ;; GLK windows
 
@@ -128,24 +124,22 @@
          (when (null glk-root-window)
            (glki-create-first-window wintype new-window-id new-window-stream-id rock)))
         (t
-         (condition-case the-error
-             (let* ((new-glk-window (glki-generate-new-window wintype new-window-id new-window-stream-id rock))
-                    (new-pair-window (glki-generate-new-window 'glk-wintype-pair new-parent-id new-parent-stream-id 0))
-                    (old-emacs-window (glki-get-emacs-window split))
-                    (new-emacs-window
-                     (split-window old-emacs-window (glki-calc-new-window-size method old-emacs-window size wintype) (glki-vertical-split method))))
-               (glki-fix-parent split new-pair-window)
-               (glki-opq-window-set-first-child new-pair-window split)
-               (glki-opq-window-set-second-child new-pair-window new-glk-window)
-               (when (eq glk-root-window split)
-                 (setq glk-root-window new-pair-window))
-               (cond ((or (memq 'glk-winmethod-above method) (memq 'glk-winmethod-left method))
-                      (set-window-buffer new-emacs-window (glki-opq-window-get-buffer split))
-                      (set-window-buffer old-emacs-window (glki-opq-window-get-buffer new-glk-window)))
-                     ((or (memq 'glk-winmethod-below method) (memq 'glk-winmethod-right method))
-                      (set-window-buffer new-emacs-window (glki-opq-window-get-buffer new-glk-window))))
-               new-glk-window)
-             (error nil)))))
+         (let* ((new-glk-window (glki-generate-new-window wintype new-window-id new-window-stream-id rock))
+                (new-pair-window (glki-generate-new-window 'glk-wintype-pair new-parent-id new-parent-stream-id 0))
+                (old-emacs-window (glki-get-emacs-window split))
+                (new-emacs-window
+                 (split-window old-emacs-window (glki-calc-new-window-size method old-emacs-window size wintype) (glki-vertical-split method))))
+           (glki-fix-parent split new-pair-window)
+           (setf (glki-opq-window-first-child new-pair-window) split)
+           (setf (glki-opq-window-second-child new-pair-window) new-glk-window)
+           (when (eq glk-root-window split)
+             (setq glk-root-window new-pair-window))
+           (cond ((or (memq 'glk-winmethod-above method) (memq 'glk-winmethod-left method))
+                  (set-window-buffer new-emacs-window (glki-opq-window-buffer split))
+                  (set-window-buffer old-emacs-window (glki-opq-window-buffer new-glk-window)))
+                 ((or (memq 'glk-winmethod-below method) (memq 'glk-winmethod-right method))
+                  (set-window-buffer new-emacs-window (glki-opq-window-buffer new-glk-window))))
+           new-glk-window))))
 
 (defun glk-window-close (win)
   (unless (eq win glk-root-window)
@@ -153,7 +147,7 @@
   (glki-dispose-window win))
 
 (defun glk-window-clear (win)
-  (with-current-buffer (glki-opq-window-get-buffer win)
+  (with-current-buffer (glki-opq-window-buffer win)
     (let ((inhibit-read-only t))
       (erase-buffer))))
 
@@ -165,39 +159,45 @@
 (defun glk-window-move-cursor (win xpos ypos)
   "In a Text Grid window sets the current cursor position"
   (let ((inhibit-read-only t))
-    (when (eq 'glk-wintype-text-grid (glki-opq-window-get-type win))
-      (with-current-buffer (glki-opq-window-get-buffer win)
+    (when (eq 'glk-wintype-text-grid (glki-opq-window-type win))
+      (with-current-buffer (glki-opq-window-buffer win)
         (forward-line (- (+ 1 ypos) (line-number-at-pos)))
         (while (< (line-number-at-pos) (+ 1 ypos))
           (insert "\n"))
         (move-to-column xpos t)))))
 
-(defun glki-create-window-stream (window-type glk-window stream-id)
+(defun glki-create-window-stream (window-type buffer stream-id)
   "Create a stream for this window. Use this stream id."
-  (let ((stream (glki-opq-stream-create stream-id)))
-    (glki-opq-stream-set-buffer stream (glki-opq-window-get-buffer glk-window))
-    (glki-opq-stream-set-type stream (if (eq window-type 'glk-wintype-text-grid) 'glki-window-stream-text-grid 'glki-window-stream-text-buffer))
-    stream))
+  (glki-opq-stream-create stream-id
+                          0
+                          buffer
+                          (if (eq window-type 'glk-wintype-text-grid) 'glki-window-stream-text-grid 'glki-window-stream-text-buffer)
+                          0
+                          0
+                          nil
+                          nil
+                          nil
+                          nil))
 
 (defun glk-set-window (win)
-  (setq glk-current-stream (glki-opq-window-get-stream win))
+  (setq glk-current-stream (glki-opq-window-stream win))
   nil)
 
 (defun glk-window-get-parent (win)
   (let ((windows glki-opq-window)
         result)
     (while (and windows (not result))
-      (if (or (eq win (glki-opq-window-get-first-child (car windows)))
-              (eq win (glki-opq-window-get-second-child (car windows))))
-          (setq result (car windows))
+      (if (or (eq win (glki-opq-window-first-child (cdar windows)))
+              (eq win (glki-opq-window-second-child (cdar windows))))
+          (setq result (cdar windows))
         (setq windows (cdr windows))))
     result))
 
 (defun glk-window-get-sibling (win)
   (let ((parent (glk-window-get-parent win)))
     (when parent
-      (if (eq win (glki-opq-window-get-first-child parent))
-          (glki-opq-window-get-second-child parent)
-        (glki-opq-window-get-first-child parent)))))
+      (if (eq win (glki-opq-window-first-child parent))
+          (glki-opq-window-second-child parent)
+        (glki-opq-window-first-child parent)))))
 
 (provide 'glk-window)

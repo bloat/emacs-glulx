@@ -305,14 +305,14 @@
       (glx-get-destinations store)
     (funcall (car store)
              (cadr store)
-             (if (glx-save-game (glki-opq-stream-get-buffer (glx-32->glk-opq stream)) dest-type dest-addr) glx-0 glx-1)
+             (if (glx-save-game (glki-opq-stream-buffer (glx-32->glk-stream stream)) dest-type dest-addr) glx-0 glx-1)
              4)))
 
 (glx-defopcode 'save #x123 '(load store) #'glx-instruction-save)
 
 (defun glx-restore-game (stream)
   (cl-multiple-value-bind (memory stack)
-      (with-current-buffer (glki-opq-stream-get-buffer (glx-32->glk-opq stream))
+      (with-current-buffer (glki-opq-stream-buffer (glx-32->glk-stream stream))
         (goto-char (point-min))
         (read (current-buffer)))
     (setq *glx-memory* (glx-restore-memory-with-protect memory))

@@ -753,16 +753,15 @@
   :tags '(instructions)
   (unwind-protect
       (let ((*glx-memory* (make-vector 8 0))
-            (stream (glx-32->glk-opq 12))
+            (stream (glk-stream-open-memory nil nil nil nil '\(0\ 0\ 0\ 12\)))
             (*glx-pc* 88))
-        (with-temp-buffer
+        (with-current-buffer (glki-opq-stream-buffer stream)
           (insert "([0 1 2 3 0 0 0 0] ((1 4 52) (nil ((0 . 0)))))")
-          (put stream 'buffer (current-buffer))
           (glx-restore-game (glx-32 12))
           (should (equal *glx-memory* [0 1 2 3 255 255 255 255]))
           (should (equal *glx-stack* (list (list nil (list (cons glx-0 glx-0))))))
           (should (= *glx-pc* 52))))
-    (put 'fileref 'buffer nil)))
+    (glki-kill-all-streams)))
 
 (ert-deftest restore-game-should-load-from-buffer-and-not-overwrite-protected-memory ()
   "restore game should load from buffer and use protected memory range"
@@ -770,13 +769,12 @@
   (unwind-protect
       (let ((*glx-protect* (cons 1 2))
             (*glx-memory* (vector 4 5 6 7 0 0 0 0))
-            (stream (glx-32->glk-opq 12))
+            (stream (glk-stream-open-memory nil nil nil nil '\(0\ 0\ 0\ 12\)))
             (*glx-pc* 88))
-        (with-temp-buffer
+        (with-current-buffer (glki-opq-stream-buffer stream)
           (insert "([0 1 2 3 0 0 0 0] ((1 4 53) (nil ((0 . 0)))))")
-          (put stream 'buffer (current-buffer))
           (glx-restore-game (glx-32 12))
           (should (equal *glx-memory* [0 5 6 3 255 255 255 255]))
           (should (equal *glx-stack* (list (list nil (list (cons glx-0 glx-0))))))
           (should (= *glx-pc* 53))))
-    (put 'fileref 'buffer nil)))
+    (glki-kill-all-streams)))

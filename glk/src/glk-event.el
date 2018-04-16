@@ -36,19 +36,19 @@
 
 (defun glki-get-line-event-request (glk-window)
   "Returns any line event request on the given window"
-  (get glk-window 'glk-line-event))
+  (glki-opq-window-glk-line-event glk-window))
 
-(defun glki-add-line-event-request (window-id c-buffer)
+(defun glki-add-line-event-request (glk-window buffer)
   "Mark the window has having a line event request on it"
-  (put window-id 'glk-line-event c-buffer))
+  (setf (glki-opq-window-glk-line-event glk-window) buffer))
 
-(defun glki-clear-line-event-request (window-id)
+(defun glki-clear-line-event-request (glk-window)
   "Clear any line event request on this window"
-  (put window-id 'glk-line-event nil))
+  (setf (glki-opq-window-glk-line-event glk-window) nil))
 
-(defun glki-create-line-input-event (line-text c-buffer)
+(defun glki-create-line-input-event (line-text buffer)
   "Creates a line input event object"
-  (list 'glk-evtype-lineinput (glki-get-window-id (current-buffer)) (length line-text) 0 c-buffer line-text))
+  (list 'glk-evtype-lineinput (glki-get-window (current-buffer)) (length line-text) 0 buffer line-text))
 
 (defun glki-get-line-event-window (event)
   "Returns the window id for the event"
@@ -57,14 +57,14 @@
 (defun glk-request-line-event (win buf maxlen initlen)
   (when (not (glki-get-line-event-request win))
     (glki-add-line-event-request win buf)
-    (with-current-buffer (glki-opq-window-get-buffer win)
+    (with-current-buffer (glki-opq-window-buffer win)
       (use-local-map glk-mode-map)))
   nil)
 
 (defun glk-cancel-line-event (win)
   (if (glki-get-line-event-request win)
       (progn
-        (with-current-buffer (glki-opq-window-get-buffer win)
+        (with-current-buffer (glki-opq-window-buffer win)
           (glki-mode-add-input-to-event-queue))
         (glki-get-next-event))
     '(glk-evtype-none nil nil nil nil nil)))
@@ -76,18 +76,18 @@
 
 (defun glk-request-char-event (win)
   (when (not (glki-get-char-event-request win))
-    (put win 'glk-char-event t)
-    (with-current-buffer (glki-opq-window-get-buffer win)
+    (setf (glki-opq-window-glk-char-event win) t)
+    (with-current-buffer (glki-opq-window-buffer win)
       (use-local-map glk-char-input-mode-map))))
 
 (defun glki-get-char-event-request (glk-window)
-  (get glk-window 'glk-char-event))
+  (glki-opq-window-glk-char-event glk-window))
 
 (defun glki-create-char-input-event (char)
-  (list 'glk-evtype-charinput (glki-get-window-id (current-buffer)) char 0))
+  (list 'glk-evtype-charinput (glki-get-window (current-buffer)) char 0))
 
 (defun glki-clear-char-event-request (glk-window)
-  (put glk-window 'glk-char-event nil))
+  (setf (glki-opq-window-glk-char-event glk-window) nil))
 
 (defun glk-cancel-char-event (win)
   (glki-clear-char-event-request win))
@@ -125,7 +125,7 @@
                (if (= start-of-input (line-beginning-position))
                    ""
                  (buffer-substring-no-properties start-of-input end-of-input)))))
-          (event-request (glki-get-line-event-request (glki-get-window-id (current-buffer)))))
+          (event-request (glki-get-line-event-request (glki-get-window (current-buffer)))))
       (newline)
       (when event-request
         (glki-add-event-to-queue
@@ -139,7 +139,7 @@
 
 (defun glki-press-any-key ()
   (interactive)
-  (when (glki-get-char-event-request (glki-get-window-id (current-buffer)))
+  (when (glki-get-char-event-request (glki-get-window (current-buffer)))
     (glki-add-event-to-queue
      (glki-create-char-input-event last-command-event))))
 

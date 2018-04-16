@@ -11,60 +11,51 @@
 
 (require 'cl-lib)
 
-(defun glki-get-rock (object)
-  (get object 'rock))
-
-(defun glki-iterate-get-next (collection current)
-  (cond
-   ((null collection) nil)
-   ((null current) (list (car collection) (glki-get-rock (car collection))))
-   ((eq (car collection) current) (glki-iterate-get-next (cdr collection) nil))
-   (t (glki-iterate-get-next (cdr collection) current))))
+(defun glki-iterate-get-next (collection rock-fn current)
+  (when collection
+    (let ((result (unless current (car collection))))
+      (while (and (not result) collection)
+        (when (eq current (cdar collection))
+          (setq result (cadr collection)))
+        (setq collection (cdr collection)))
+      (when result
+        (list (cdr result) (funcall rock-fn (cdr result)))))))
 
 (defmacro defopaque (name &rest slots)
   (let ((name-string (symbol-name name)))
     (cl-labels ((make-symbol (prefix &optional suffix) (intern (concat prefix name-string suffix))))
-      (let ((arg-name (make-symbol "glk-"))
-            (id-name (make-symbol "glk-" "-id"))
-            (slots (cons 'rock slots)))
+      (let* ((arg-name (make-symbol "glk-"))
+             (id-name (make-symbol "glk-" "-id"))
+             (structure-name (make-symbol "glki-opq-"))
+             (collection-name (make-symbol "glki-opq-"))
+             (private-create-name (make-symbol "glki-opq-" "-private-create"))
+             (slots (cons id-name (cons 'rock slots)))
+             (keyword-slots (cl-mapcan (lambda (s) (list (intern (concat ":" (symbol-name s))) s)) slots)))
         `(progn
            
-           (defvar ,(make-symbol "glki-opq-") nil ,(concat "The collection of glk " name-string " opaque objects"))
-           
-           (defun ,(make-symbol "glki-opq-clear-" "-plist") (,arg-name)
-             ,@(mapcar (lambda (slot-name) `(put ,arg-name (quote ,slot-name) nil))
-                       slots))
-           
-           ,@(mapcar (lambda (slot-name)
-                       (let ((slot-string (symbol-name slot-name)))
-                         `(defun ,(intern (concat "glki-opq-" name-string "-set-" slot-string))
-                              (,arg-name value)
-                            ,(concat "Sets the " slot-string " value of this " name-string)
-                            (put ,arg-name ',slot-name value))))
-                     slots)
-           
-           ,@(mapcar (lambda (slot-name)
-                       (let ((slot-string (symbol-name slot-name)))
-                         `(defun ,(intern (concat "glki-opq-" name-string "-get-" slot-string))
-                              (,arg-name)
-                            ,(concat "Gets the " slot-string " value of this " name-string)
-                            (get ,arg-name ',slot-name))))
-                     slots)
+           (defvar ,collection-name nil ,(concat "The collection of glk " name-string " opaque objects"))
+
+           (cl-defstruct (,structure-name (:constructor ,private-create-name)
+                                          (:copier nil))
+             ,@slots)
            
            (defun ,(make-symbol "glk-" "-iterate") (,arg-name)
              ,(concat "Iterates through the instances of " name-string ". Returns the next " name-string " after the given one.")
-             (glki-iterate-get-next ,(make-symbol "glki-opq-") ,arg-name))
+             (glki-iterate-get-next ,collection-name #',(make-symbol "glki-opq-" "-rock") ,arg-name))
            
-           (defun ,(make-symbol "glki-opq-" "-create") (,id-name)
+           (defun ,(make-symbol "glki-opq-" "-create") ,slots
              ,(concat "Creates and stores a new instance of " name-string)
              (when ,id-name
-               (,(make-symbol "glki-opq-clear-" "-plist") ,id-name)
-               (push ,id-name ,(make-symbol "glki-opq-")))
-             ,id-name)
+               (let ((new-object (,private-create-name ,@keyword-slots)))
+                 (push (cons ,id-name new-object) ,collection-name)
+                 new-object)))
            
-           (defun ,(make-symbol "glki-opq-" "-dispose") (,id-name)
+           (defun ,(make-symbol "glki-opq-" "-dispose") (,arg-name)
              ,(concat "Disposes of an instance of " name-string)
-             (,(make-symbol "glki-opq-clear-" "-plist") ,id-name)
-             (setq ,(make-symbol "glki-opq-") (remove ,id-name ,(make-symbol "glki-opq-")))))))))
+             (setq ,collection-name (rassq-delete-all ,arg-name ,collection-name)))
+
+           (defun ,(make-symbol "glki-opq-" "-lookup") (,id-name)
+             ,(concat "Lookup an instance of " name-string " from its id")
+             (cdr (assq ,id-name ,collection-name))))))))
 
 (provide 'glk-opaque)

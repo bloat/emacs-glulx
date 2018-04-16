@@ -19,31 +19,31 @@ Used by routines which do not specify a stream")
 (defopaque stream buffer type read-count write-count storage face unicode mode)
 
 (defun glki-process-string-for-insertion (stream s)
-  (if (eq (glki-opq-stream-get-type stream) 'glki-memory-stream)
+  (if (eq (glki-opq-stream-type stream) 'glki-memory-stream)
       (progn
-        (glki-opq-stream-set-write-count stream
-                                         (+ (length s) (glki-opq-stream-get-write-count stream)))
+        (setf (glki-opq-stream-write-count stream)
+              (+ (length s) (glki-opq-stream-write-count stream)))
         s)
     (propertize s
                 'read-only "Game text is read only"
                 'rear-nonsticky t
                 'front-sticky '(read-only)
                 'glk-text t
-                'face (glki-opq-stream-get-face stream)
+                'face (glki-opq-stream-face stream)
                 'hard t)))
 
 (defun glki-get-current-style-face ()
-  (glki-opq-stream-get-face glk-current-stream))
+  (glki-opq-stream-face glk-current-stream))
 
 (defun glki-post-process-current-buffer (stream pre-insert-point)
-  (unless (eq (glki-opq-stream-get-type stream) 'glki-memory-stream)
+  (unless (eq (glki-opq-stream-type stream) 'glki-memory-stream)
     (unless (string= " " (buffer-substring (- (line-end-position) 1) (line-end-position)))
       (fill-region pre-insert-point (line-end-position)))))
 
 (defun glk-put-string-stream (str s)
-  (with-current-buffer (glki-opq-stream-get-buffer str)
+  (with-current-buffer (glki-opq-stream-buffer str)
     (let ((inhibit-read-only t))
-      (if (eq (glki-opq-stream-get-type str) 'glki-window-stream-text-grid)
+      (if (eq (glki-opq-stream-type str) 'glki-window-stream-text-grid)
           (insert (glki-process-string-for-insertion str s))
         (let ((pre-insert-point (point-max)))
           (insert (glki-process-string-for-insertion str s))
@@ -61,7 +61,7 @@ Used by routines which do not specify a stream")
   (glk-put-char-stream glk-current-stream ch))
 
 (defun glk-get-char-stream (str)
-  (with-current-buffer (glki-opq-stream-get-buffer str)
+  (with-current-buffer (glki-opq-stream-buffer str)
     (let ((char (char-after)))
       (if (not char)
           -1
@@ -82,16 +82,16 @@ Used by routines which do not specify a stream")
   (setq glk-current-stream str))
 
 (defun glki-stream-open-memory (buf buflen fmode rock stream-id unicode)
-  (let ((stream (glki-opq-stream-create stream-id)))
-    (glki-opq-stream-set-buffer stream (generate-new-buffer "*glk*"))
-    (glki-opq-stream-set-type stream 'glki-memory-stream)
-    (glki-opq-stream-set-read-count stream 0)
-    (glki-opq-stream-set-write-count stream 0)
-    (glki-opq-stream-set-storage stream buf)
-    (glki-opq-stream-set-unicode stream unicode)
-    (glki-opq-stream-set-mode stream fmode)
-    (glki-opq-stream-set-rock stream rock)
-    stream))
+  (glki-opq-stream-create stream-id
+                          rock
+                          (generate-new-buffer "*glk*")
+                          'glki-memory-stream
+                          0
+                          0
+                          buf
+                          nil
+                          unicode
+                          fmode))
 
 (defun glk-stream-open-memory (buf buflen fmode rock stream-id)
   (glki-stream-open-memory buf buflen fmode rock stream-id nil))
@@ -100,22 +100,21 @@ Used by routines which do not specify a stream")
   (glki-stream-open-memory buf buflen fmode rock stream-id t))
 
 (defun glki-stream-open-file (fileref fmode rock stream-id unicode)
-  (let ((stream (glki-opq-stream-create stream-id))
-        (filename (glki-opq-fileref-get-filename fileref))
-        (find-file-hook nil))
-    (glki-opq-stream-set-buffer stream
-                                (cond ((and (eq 'glk-filemode-read fmode) (not (file-exists-p filename)))
-                                       (signal 'glk-error (list "Can't read from a non-existant file" filename)))
-                                      ((eq 'glk-filemode-write fmode) (generate-new-buffer "*glk*"))
-                                      ((eq 'glk-filemode-read fmode) (find-file-noselect filename t))))
-    (glki-opq-stream-set-type stream 'glki-file-stream)
-    (glki-opq-stream-set-read-count stream 0)
-    (glki-opq-stream-set-write-count stream 0)
-    (glki-opq-stream-set-storage stream fileref)
-    (glki-opq-stream-set-unicode stream unicode)
-    (glki-opq-stream-set-mode stream fmode)
-    (glki-opq-stream-set-rock stream rock)
-    stream))
+  (let ((find-file-hook nil)
+        (filename (glki-opq-fileref-filename fileref)))
+    (glki-opq-stream-create stream-id
+                            rock
+                            (cond ((and (eq 'glk-filemode-read fmode) (not (file-exists-p filename)))
+                                   (signal 'glk-error (list "Can't read from a non-existant file" filename)))
+                                  ((eq 'glk-filemode-write fmode) (generate-new-buffer "*glk*"))
+                                  ((eq 'glk-filemode-read fmode) (find-file-noselect filename t)))
+                            'glki-file-stream
+                            0
+                            0
+                            fileref
+                            nil
+                            unicode
+                            fmode)))
 
 (defun glk-stream-open-file (fileref fmode rock stream-id)
   (glki-stream-open-file fileref fmode rock stream-id nil))
@@ -124,35 +123,35 @@ Used by routines which do not specify a stream")
   (glki-stream-open-file fileref fmode rock stream-id t))
 
 (defun glki-stream-dispose (stream)
-  (if (glki-opq-stream-get-buffer stream)
-      (kill-buffer (glki-opq-stream-get-buffer stream)))
+  (when (glki-opq-stream-buffer stream)
+    (kill-buffer (glki-opq-stream-buffer stream)))
   (glki-opq-stream-dispose stream))
 
 (defun glki-kill-all-streams ()
   "Cleans up all glk streams and destroys the associated buffers"
-  (mapcar #'glki-stream-dispose glki-opq-stream))
+  (mapcar (lambda (c) (glki-stream-dispose (cdr c))) glki-opq-stream))
 
 (defun glk-stream-close (stream)
-  (let ((type (glki-opq-stream-get-type stream)))
+  (let ((type (glki-opq-stream-type stream)))
     (when (or (eq type 'glki-window-stream-text-grid) (eq type 'glki-window-stream-text-buffer))
       (signal 'glk-error (list "Can't close a window stream" stream)))
     (let ((result (cond ((eq type 'glki-memory-stream)
-                         (list nil (list (eq (glki-opq-stream-get-type stream) 'glki-memory-stream)
-                                         (glki-opq-stream-get-read-count stream)
-                                         (glki-opq-stream-get-write-count stream)
-                                         (glki-opq-stream-get-unicode stream)
-                                         (glki-opq-stream-get-storage stream)
-                                         (with-current-buffer (glki-opq-stream-get-buffer stream)
+                         (list nil (list (eq (glki-opq-stream-type stream) 'glki-memory-stream)
+                                         (glki-opq-stream-read-count stream)
+                                         (glki-opq-stream-write-count stream)
+                                         (glki-opq-stream-unicode stream)
+                                         (glki-opq-stream-storage stream)
+                                         (with-current-buffer (glki-opq-stream-buffer stream)
                                            (buffer-string)))))
                         ((eq type 'glki-file-stream)
-                         (with-current-buffer (glki-opq-stream-get-buffer stream)
-                           (write-file (glki-opq-fileref-get-filename (glki-opq-stream-get-storage stream))))
+                         (with-current-buffer (glki-opq-stream-buffer stream)
+                           (write-file (glki-opq-fileref-filename (glki-opq-stream-storage stream))))
                          (list nil (list nil))))))
       (glki-stream-dispose stream)
       result)))
 
 (defun glk-set-style-stream (str val)
-  (glki-opq-stream-set-face str val)
+  (setf (glki-opq-stream-face str) val)
   nil)
 
 (defun glk-set-style (val)
