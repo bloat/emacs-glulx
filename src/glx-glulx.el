@@ -218,7 +218,8 @@ The value is truncated to the given number of bytes."
         (list (copy-sequence *glx-memory*)
               (copy-tree *glx-stack*)
               *glx-pc*
-              store)))
+              store
+              *glx-undo*)))
 
 (defun glx-restore-memory-with-protect (incoming)
   (if *glx-protect*
@@ -238,7 +239,7 @@ The value is truncated to the given number of bytes."
     (setq *glx-pc* (nth 2 *glx-undo*))
     (let ((undo-store (nth 3 *glx-undo*)))
       (funcall (car undo-store) (cadr undo-store) (glx-32 -1) 4))
-    (setq *glx-undo* nil)
+    (setq *glx-undo* (nth 4 *glx-undo*))
     t))
 
 (defun glx-gen-inst-function (name)
