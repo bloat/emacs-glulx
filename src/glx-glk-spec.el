@@ -46,9 +46,10 @@
   (let ((*glx-glk-functions* (make-hash-table))
         (*glx-stack* (list (list (list glx-1))))
         (*glx-memory* (vector nil nil nil nil nil)))
-    (puthash #x40 (list (lambda () (list '\(0\ 0\ 0\ 4\) '\(0\ 0\ 0\ 1\)))
+    (puthash #x40 (list (lambda () (list (glki-opq-window-private-create :glk-window-id '\(0\ 0\ 0\ 4\))
+                                         (glki-opq-stream-private-create :glk-stream-id '\(0\ 0\ 0\ 1\))))
                         (list (list 0) (list 1) (lambda (opq memptr)
-                                                  (glx-store-mem memptr (glx-glk-opq->glx-32 opq))))) *glx-glk-functions*)
+                                                  (glx-store-mem memptr (glx-glk-result->32 opq))))) *glx-glk-functions*)
     (should (equal (glx-glk-call #x40 1) glx-4))
     (should (equal *glx-memory* [nil 0 0 0 1]))))
 
@@ -80,15 +81,26 @@
                         (list #'glx-get-next-glk-id)) *glx-glk-functions*)
     (glx-glk-call #x40 0)))
 
-(ert-deftest glx-32->glk-opq-should-convert-0-to-nil ()
-  "glx-32->glk-opq should convert 0 to nil"
+(ert-deftest glx-32->glk-opaque-should-convert-0-to-nil ()
+  "various glx-32->glk opaque functions should convert 0 to nil"
   :tags '(glk)
-  (should-not (glx-32->glk-opq glx-0)))
+  (should-not (glx-32->glk-window glx-0))
+  (should-not (glx-32->glk-stream glx-0))
+  (should-not (glx-32->glk-fileref glx-0)))
 
-(ert-deftest glx-32->glk-opq-should-convert-other-values-to-a-symbol ()
-  "glx-32->glk-opq should convert other values to a symbol"
+(ert-deftest glx-32->glk-opaque-should-convert-to-symbol-and-use-as-lookup-key ()
+  "various glx-32->glk opaque functions should convert other values to a symbol and use as a lookup key"
   :tags '(glk)
-  (should (equal (glx-32->glk-opq glx-4) '\(0\ 0\ 0\ 4\))))
+  (let (window-arg stream-arg fileref-arg)
+    (cl-letf (((symbol-function 'glki-opq-window-lookup) (lambda (x) (setf window-arg x) 'window))
+              ((symbol-function 'glki-opq-stream-lookup) (lambda (x) (setf stream-arg x) 'stream))
+              ((symbol-function 'glki-opq-fileref-lookup) (lambda (x) (setf fileref-arg x) 'fileref)))
+      (should (eq (glx-32->glk-window glx-4) 'window))
+      (should (eq (glx-32->glk-stream glx-2) 'stream))
+      (should (eq (glx-32->glk-fileref glx-1) 'fileref))
+      (should (eq window-arg '\(0\ 0\ 0\ 4\)))
+      (should (eq stream-arg '\(0\ 0\ 0\ 2\)))
+      (should (eq fileref-arg '\(0\ 0\ 0\ 1\))))))
 
 (ert-deftest glx-glk-result->32-should-convert-nil-to-0 ()
   "glx-glk-result->32 should convert nil to 0"
@@ -98,13 +110,15 @@
 (ert-deftest glx-glk-result->32-should-convert-glk-opaques-to-32-bit-values ()
   "glx-glk-result->32 should convert glk opaques to 32 bit values"
   :tags '(glk)
-  (should (equal (glx-glk-result->32 '\(0\ 0\ 0\ 5\)) glx-5)))
+  (should (equal (glx-glk-result->32 (glki-opq-window-private-create :glk-window-id '\(0\ 0\ 0\ 5\))) glx-5))
+  (should (equal (glx-glk-result->32 (glki-opq-stream-private-create :glk-stream-id '\(0\ 0\ 0\ 3\))) glx-3))
+  (should (equal (glx-glk-result->32 (glki-opq-fileref-private-create :glk-fileref-id '\(0\ 0\ 0\ 1\))) glx-1)))
 
 (ert-deftest storing-an-event-into-glulx-memory ()
   "storing an event into glulx memory"
   :tags '(glk)
   (let ((*glx-memory* (make-vector 33 0)))
-    (glx-glk-store-event `(glk-evtype-lineinput \(0\ 0\ 0\ 1\) 16 0 ,(glx-32 17) "examine building") glx-1)
+    (glx-glk-store-event `(glk-evtype-lineinput ,(glki-opq-window-private-create :glk-window-id '\(0\ 0\ 0\ 1\)) 16 0 ,(glx-32 17) "examine building") glx-1)
     (should (equal *glx-memory*
                    [0 0 0 0 3
                       0 0 0 1

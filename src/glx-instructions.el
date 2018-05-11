@@ -280,7 +280,7 @@
 (glx-defopcode 'jumpabs #x104 '(load) #'glx-instruction-jumpabs)
 (glx-def-store random #x110 (l1) (glx-32-rand l1))
 (glx-defopcode 'setrandom #x111 '(load) (lambda (modes seed) (random (format "%S" seed))))
-(glx-defopcode 'quit #x120 '() (lambda (modes) 'glx-quit))
+(glx-defopcode 'quit #x120 '() (lambda (modes) 'glx-return-to-emacs))
 (glx-def-store verify #x121 () glx-0)
 
 (defun glx-instruction-restart (modes)

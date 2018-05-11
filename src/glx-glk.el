@@ -376,11 +376,11 @@ glk call."
 
 (defun glx-glk-select (event-memptr)
   (let ((result (glk-select)))
-    (if (eq result 'glk-no-return)
+    (if (eq result 'glx-return-to-emacs)
         (progn
           (setq *glx-store-event-memptr* event-memptr)
           (setq *glx-unexpected-exit* nil)
-          'glk-no-return)
+          'glx-return-to-emacs)
       (glx-log "Storing event at %s : %s" event-memptr result)
       (glx-glk-store-event result event-memptr)
       glx-0)))

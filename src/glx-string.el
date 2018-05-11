@@ -54,7 +54,8 @@ by 0 byte. The characters are outputted using the current GLX-IOSYS-CHARFUN."
 
 (defun glx-get-string (memptr function-caller)
   "Process the string encoded at the Glulx VM memory location given by the 32 bit MEMPTR.
-Individual characters from the string are passed to CHARFUN as they are loaded."
+If the string needs to call a glulx function while being decoded, the FUNCTION-CALLER is used.
+FUNCTION-CALLER is passed in here to avoid a circular dependency between glulx modules."
   (cond ((glx-uncompressed-string-p memptr)
          (glx-memory-get-string (glx-+1 memptr)))
         ((glx-compressed-string-p memptr)

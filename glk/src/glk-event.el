@@ -106,7 +106,7 @@
             (glki-clear-char-event-request event-window)))
           event)
       (setq glk-select-waiting t)
-      'glk-no-return)))
+      'glx-return-to-emacs)))
 
 (defun glki-get-event-type (event)
   (car event))

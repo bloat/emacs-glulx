@@ -61,7 +61,7 @@
   :tags '(glk event)
   (let ((glk-event-queue '())
         (glk-select-waiting nil))
-    (should (equal (glk-select) 'glk-no-return))))
+    (should (equal (glk-select) 'glx-return-to-emacs))))
 
 (ert-deftest glk-select-should-set-flag-to-indicate-event-request-is-pending ()
   "glk-select should set flag to indicate event request is pending"

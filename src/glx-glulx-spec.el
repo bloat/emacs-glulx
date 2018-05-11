@@ -253,13 +253,15 @@
     (should (equal *glx-undo* '([0 0 0 0]
                                 ((nil ((0 . 0))))
                                 (0 3 4 5)
-                                store-function)))
+                                store-function
+                                nil)))
     (glx-value-push glx-4)
     (glx-memory-set glx-0 glx-5 4)
     (should (equal *glx-undo* '([0 0 0 0]
                                 ((nil ((0 . 0))))
                                 (0 3 4 5)
-                                store-function)))))
+                                store-function
+                                nil)))))
 
 (ert-deftest can-not-restore-undo-with-no-undo-saved ()
   "Can't restore undo with no undo saved"

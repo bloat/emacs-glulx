@@ -108,9 +108,7 @@ Also returns the addressing modes themselves. "
       (signal 'glx-exec-error (list "Unknown opcode" opcode)))))
 
 (defsubst glx-process-instruction-result (result)
-  (not (or (eq result 'glk-no-return)
-           (eq result 'glx-quit)
-           (eq result 'glx-return-to-emacs))))
+  (not (eq result 'glx-return-to-emacs)))
 
 (defun glx-execute-instruction (opcode args modes)
   (let ((instruction (gethash opcode glx-instructions)))

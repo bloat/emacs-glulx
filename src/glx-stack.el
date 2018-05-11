@@ -200,7 +200,7 @@ which will be used when returning from this function."
         (glx-handle-function-args function-ptr args)
         (setq *glx-pc* (glx-get-function-code-start function-ptr)))))
 
-(defun glx-check-for-no-return (value) (if (eq value 'glk-no-return) glx-0 value))
+(defun glx-check-for-no-return (value) (if (eq value 'glx-return-to-emacs) glx-0 value))
 (defun glx-store-throw (&rest ignore) nil)
 (defun glx-store-mem (addr value &optional bytes) (if (not (glx-0-p addr)) (glx-memory-set addr (glx-check-for-no-return value) (if (not bytes) 4 bytes))) value)
 (defun glx-store-stack (ignore value &rest ignore-rest) (glx-value-push (glx-check-for-no-return value)) value)

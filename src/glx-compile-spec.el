@@ -167,7 +167,7 @@
     (cl-multiple-value-bind (next-inst compiled-fun)
         (glx-compile-instruction glx-0)
       (should (equal next-inst glx-1))
-      (should (equal (glx-execute-compiled-instruction compiled-fun) 'glx-quit)))))
+      (should (equal (glx-execute-compiled-instruction compiled-fun) 'glx-return-to-emacs)))))
 
 (ert-deftest compile-instruction-one-load-arg-constant ()
   "Compile instruction (one load arg [constant])"
